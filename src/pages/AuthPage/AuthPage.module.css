@@ -1,0 +1,69 @@
+.pageWrapper {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-image: url('/src/assets/piggs.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.header {
+  padding: 3vw;
+  text-align: center;
+  z-index: 2;
+}
+
+.logo {
+  font-size: 2.5vw;
+  font-weight: 700;
+  color: #1d1d1f;
+  text-shadow: 0 0.2vw 1vw rgba(255, 255, 255, 0.6);
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(6vw);
+  opacity: 0.6;
+  z-index: 1;
+  animation: float 20s infinite alternate ease-in-out;
+}
+
+.blobPurple {
+  width: 30vw;
+  height: 30vw;
+  background: #c084fc;
+  top: 15vw;
+  left: 20vw;
+}
+
+.blobBlue {
+  width: 35vw;
+  height: 35vw;
+  background: #38bdf8;
+  bottom: 5vw;
+  right: 15vw;
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5vw, -3vw) scale(1.1); }
+  100% { transform: translate(-2vw, 2vw) scale(0.9); }
+}
+
+@media (max-width: 768px) {
+  .logo { font-size: 8vw; }
+  .blobPurple { width: 60vw; height: 60vw; filter: blur(12vw); }
+  .blobBlue { width: 70vw; height: 70vw; filter: blur(15vw); }
+}
