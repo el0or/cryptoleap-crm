@@ -1,77 +1,339 @@
-# React + TypeScript + Vite
+````md
+# CryptoLeap CRM
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Масштабируемая CRM-система, построенная на архитектуре монорепозитория (NPM Workspaces). Проект включает в себя Frontend (React/Vite), Backend (NestJS) и общие контракты (Shared Types), с упором на ручной контроль стилей (CSS Modules) и надежную инфраструктуру (Docker, PostgreSQL, Prisma).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+# 🏗 Архитектура проекта
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+.
+├── apps
+│   ├── web          # Frontend (React + Vite)
+│   └── server       # Backend (NestJS + Prisma)
+│
+├── packages
+│   └── shared       # Общие TypeScript интерфейсы и типы
+│
+├── package.json
+└── README.md
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Структура компонентов
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Путь | Назначение |
+|------|------------|
+| `apps/web` | Frontend на React + Vite |
+| `apps/server` | Backend на NestJS |
+| `packages/shared` | Общие интерфейсы и контракты между клиентом и сервером |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+# 🛠 Предварительные требования
+
+Перед запуском убедитесь, что установлены:
+
+- Node.js **18+**
+- npm **9+**
+- Docker
+- PostgreSQL (через Docker)
+- Git
+
+Проверить версии:
+
+```bash
+node -v
+npm -v
+docker -v
+```
+
+---
+
+# 📦 Установка зависимостей
+
+Перейдите в корень проекта:
+
+```bash
+cd CryptoLeap
+```
+
+Установите все зависимости:
+
+```bash
+npm install
+```
+
+Поскольку используется **NPM Workspaces**, локальные пакеты будут автоматически связаны между собой.
+
+---
+
+# ⚙️ Настройка окружения
+
+Перейдите в папку сервера:
+
+```bash
+cd apps/server
+```
+
+Создайте файл:
+
+```text
+.env
+```
+
+Добавьте в него строку подключения:
+
+```env
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/cryptoleap-db?schema=public"
+```
+
+> **Важно:** замените `YOUR_PASSWORD` на свой пароль.
+
+---
+
+# 🗄 Запуск PostgreSQL через Docker
+
+Создайте контейнер базы данных:
+
+```bash
+docker run \
+  --name cryptoleap-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=YOUR_PASSWORD \
+  -e POSTGRES_DB=cryptoleap-db \
+  -p 5432:5432 \
+  -d postgres
+```
+
+Проверить, что контейнер работает:
+
+```bash
+docker ps
+```
+
+Если необходимо остановить контейнер:
+
+```bash
+docker stop cryptoleap-db
+```
+
+Запустить снова:
+
+```bash
+docker start cryptoleap-db
+```
+
+---
+
+# 🗃 Настройка Prisma
+
+Перейдите в backend:
+
+```bash
+cd apps/server
+```
+
+Сгенерируйте Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+Примените схему к базе данных:
+
+```bash
+npx prisma db push
+```
+
+При необходимости открыть Prisma Studio:
+
+```bash
+npx prisma studio
+```
+
+---
+
+# 🚀 Запуск Backend
+
+Откройте первый терминал:
+
+```bash
+cd apps/server
+```
+
+Запустите сервер разработки:
+
+```bash
+npm run start:dev
+```
+
+Backend будет доступен по адресу:
 
 ```
+http://localhost:3000
+```
+
+---
+
+# 🌐 Запуск Frontend
+
+Откройте второй терминал:
+
+```bash
+cd apps/web
+```
+
+Запустите Vite:
+
+```bash
+npm run dev
+```
+
+Frontend будет доступен по адресу:
+
+```
+http://localhost:5173
+```
+
+---
+
+# 📂 Рабочий процесс разработки
+
+После запуска проекта структура процессов будет выглядеть следующим образом:
+
+```text
+Terminal 1
+└── apps/server
+    └── npm run start:dev
+
+Terminal 2
+└── apps/web
+    └── npm run dev
+
+Docker
+└── PostgreSQL
+```
+
+---
+
+# 🔄 Типичный цикл разработки
+
+После изменения моделей Prisma:
+
+```bash
+cd apps/server
+
+npx prisma db push
+
+npx prisma generate
+```
+
+После изменения зависимостей:
+
+```bash
+npm install
+```
+
+---
+
+# 📌 Используемые технологии
+
+## Frontend
+
+- React
+- Vite
+- TypeScript
+- CSS Modules
+
+## Backend
+
+- NestJS
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
+
+## Общие пакеты
+
+- TypeScript
+- NPM Workspaces
+
+## Инфраструктура
+
+- Docker
+- PostgreSQL
+
+---
+
+# 🛠 Полезные команды
+
+## Установка зависимостей
+
+```bash
+npm install
+```
+
+## Запуск Frontend
+
+```bash
+cd apps/web
+
+npm run dev
+```
+
+## Запуск Backend
+
+```bash
+cd apps/server
+
+npm run start:dev
+```
+
+## Генерация Prisma Client
+
+```bash
+npx prisma generate
+```
+
+## Применение схемы БД
+
+```bash
+npx prisma db push
+```
+
+## Prisma Studio
+
+```bash
+npx prisma studio
+```
+
+## Просмотр контейнеров Docker
+
+```bash
+docker ps
+```
+
+## Остановка PostgreSQL
+
+```bash
+docker stop cryptoleap-db
+```
+
+## Запуск PostgreSQL
+
+```bash
+docker start cryptoleap-db
+```
+
+---
+
+# ✅ Готово
+
+После выполнения всех шагов:
+
+- PostgreSQL работает в Docker.
+- Prisma синхронизирована с базой данных.
+- Backend (NestJS) доступен на **http://localhost:3000**.
+- Frontend (React + Vite) доступен на **http://localhost:5173**.
+- Проект полностью готов к разработке.
+````
