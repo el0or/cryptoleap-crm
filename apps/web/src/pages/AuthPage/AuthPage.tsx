@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styles from './AuthPage.module.css';
 import type { IAuthResponse, ILoginRequest, IRegisterRequest } from '@cryptoleap_crm/shared';
+import { useNavigate } from 'react-router-dom';
 
 interface InputFieldProps {
   label: string;
@@ -9,7 +10,7 @@ interface InputFieldProps {
   onChange: (value: string) => void;
 }
 
-const InputField: React.FC<InputFieldProps> = ({ label, type, value, onChange }) => (
+const InputField = ({ label, type, value, onChange }: InputFieldProps) => (
   <div className={styles.inputGroup}>
     <label className={styles.label}>{label}</label>
     <input
@@ -23,7 +24,8 @@ const InputField: React.FC<InputFieldProps> = ({ label, type, value, onChange })
   </div>
 );
 
-const AuthPage: React.FC = () => {
+const AuthPage = () => {
+  const navigate = useNavigate();
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,6 +56,7 @@ const AuthPage: React.FC = () => {
       const authData = data as IAuthResponse;
       console.log('Успех!', authData);
       alert(`Успешно! Добро пожаловать, ${authData.user.email}`);
+      navigate('/main');
       
     } catch (err: any) {
       setError(err.message);

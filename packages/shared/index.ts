@@ -1,12 +1,18 @@
+export type UserRole =
+    | 'ADMIN'
+    | 'MANAGER'
+    | 'USER';
+
 export interface IUser {
     id: string;
     email: string;
-    role: "ADMIN" | "USER" | "MANAGER";
+    role: UserRole;
+    name: string | null;
 }
 
 export interface IAuthResponse {
     user: IUser;
-    accessToken?: string;
+    accessToken: string;
 }
 
 export interface ILoginRequest {
@@ -17,5 +23,5 @@ export interface ILoginRequest {
 export interface IRegisterRequest {
     email: string;
     password: string;
-    name: string;
+    name?: string;
 }

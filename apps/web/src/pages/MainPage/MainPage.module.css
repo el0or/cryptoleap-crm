@@ -1,0 +1,610 @@
+.mainSection {
+    display: grid;
+    grid-template-columns: 1fr 5.5fr;
+    height: 100vh;
+}
+
+.sideBar {
+    background-color: #2C2A2A;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1cqw;
+    justify-content: space-between;
+}
+
+.sideBarLogo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+}
+
+.sideBar a {
+    text-decoration: none;
+    color: #fff;
+}
+
+.sideBar a:hover {
+    color: #0d58c9;
+}
+
+.sideBar ul {
+    padding: 0;
+    margin: 0;
+}
+
+.sideBar li {
+    list-style: none;
+
+}
+
+.sideBarContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+}
+
+.sideBarExit {
+    padding: 1rem;
+}
+
+.sideBarContent h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    color: #8c8c8c;
+    letter-spacing: 0.06rem;
+}
+
+.mainContent {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mainContentHeader {
+    min-height: 5rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 2rem;
+
+    background: #fff;
+    border-bottom: 0.0625rem solid #e9e9eb;
+}
+
+.mainContentSearch {
+    width: min(22rem, 50%);
+}
+
+.mainContentSearch input {
+    width: 100%;
+
+    padding: 0.85rem 1rem;
+
+    border: 0.0625rem solid #e6e6e8;
+    border-radius: 0.7rem;
+
+    background: #f7f7f8;
+
+    font-size: 0.9rem;
+
+    outline: none;
+
+    box-sizing: border-box;
+}
+
+.mainContentSearch input:focus {
+    border-color: #8fb6ff;
+    background: #fff;
+}
+
+.mainContentHeadGroup {
+    display: flex;
+    gap: 0.7rem;
+}
+
+.headerButton {
+    width: 2.6rem;
+    height: 2.6rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0.0625rem solid #ececee;
+    border-radius: 0.7rem;
+
+    background: #fff;
+    cursor: pointer;
+
+    font-size: 1rem;
+}
+
+.headerButton:hover {
+    background: #f5f6f8;
+}
+
+.mainContentBody {
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.dashboardHeading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+
+    gap: 1rem;
+
+    margin-bottom: 1.7rem;
+}
+
+.dashboardHeading h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: #202124;
+}
+
+.dashboardHeading p {
+    margin: 0.4rem 0 0;
+
+    color: #8a8d94;
+    font-size: 0.9rem;
+}
+
+.addWidgetButton {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    padding: 0.75rem 1.1rem;
+
+    border: none;
+    border-radius: 0.7rem;
+
+    background: #2c2a2a;
+    color: #fff;
+
+    font-size: 0.85rem;
+    font-weight: 500;
+
+    cursor: pointer;
+}
+
+.addWidgetButton span {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.addWidgetButton:hover {
+    background: #3b3939;
+}
+
+/* -------------------- */
+/* Карточки */
+/* -------------------- */
+
+.dashboardGrid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(14rem, 1fr)
+        );
+
+    gap: 1rem;
+}
+
+.dashboardCard {
+    position: relative;
+
+    min-height: 9.5rem;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 1.2rem;
+
+    border: 0.0625rem solid #e8e8ea;
+    border-radius: 0.9rem;
+
+    background: #fff;
+
+    overflow: hidden;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.dashboardCard:hover {
+    transform: translateY(-0.15rem);
+
+    box-shadow:
+        0 0.5rem 1.5rem
+        rgba(0, 0, 0, 0.05);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.cardTitle {
+    color: #767980;
+    font-size: 0.85rem;
+}
+
+.cardMenu {
+    border: 0;
+    background: none;
+
+    color: #a0a0a5;
+
+    cursor: pointer;
+
+    letter-spacing: 0.05rem;
+}
+
+.cardValue {
+    margin-top: 1.2rem;
+
+    color: #242528;
+
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.cardDescription {
+    margin-top: 0.55rem;
+
+    color: #aaacb2;
+    font-size: 0.75rem;
+}
+
+.fakeChart {
+    height: 2rem;
+
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.fakeChart span {
+    flex: 1;
+
+    min-width: 0.25rem;
+
+    border-radius:
+        0.2rem 0.2rem 0 0;
+
+    background: #dce8ff;
+}
+
+.fakeChart span:nth-child(1) {
+    height: 30%;
+}
+
+.fakeChart span:nth-child(2) {
+    height: 55%;
+}
+
+.fakeChart span:nth-child(3) {
+    height: 40%;
+}
+
+.fakeChart span:nth-child(4) {
+    height: 75%;
+}
+
+.fakeChart span:nth-child(5) {
+    height: 60%;
+}
+
+.fakeChart span:nth-child(6) {
+    height: 90%;
+}
+
+.success .fakeChart span {
+    background: #d5f4df;
+}
+
+.warning .fakeChart span {
+    background: #ffead1;
+}
+
+.danger .fakeChart span {
+    background: #ffd9d9;
+}
+
+/* -------------------- */
+/* Добавление плитки */
+/* -------------------- */
+
+.emptyWidget {
+    min-height: 9.5rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.7rem;
+
+    border: 0.1rem dashed #cfd1d6;
+    border-radius: 0.9rem;
+
+    background: transparent;
+
+    color: #8c8f96;
+
+    cursor: pointer;
+}
+
+.emptyWidget:hover {
+    border-color: #7da7f5;
+    color: #4f8cff;
+    background: #f6f9ff;
+}
+
+.emptyWidgetIcon {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #eceef2;
+
+    font-size: 1.5rem;
+}
+
+/* -------------------- */
+/* Нижний блок */
+/* -------------------- */
+
+.dashboardBottomGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+
+    gap: 1rem;
+
+    margin-top: 1rem;
+}
+
+.largeWidget,
+.activityWidget {
+    min-height: 20rem;
+
+    padding: 1.3rem;
+
+    border: 0.0625rem solid #e8e8ea;
+    border-radius: 0.9rem;
+
+    background: #fff;
+}
+
+.widgetHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1rem;
+}
+
+.widgetHeader h2 {
+    margin: 0;
+
+    color: #292a2d;
+    font-size: 1rem;
+}
+
+.widgetHeader p {
+    margin: 0.35rem 0 0;
+
+    color: #a1a3a9;
+    font-size: 0.75rem;
+}
+
+.widgetHeader select {
+    padding: 0.5rem 0.7rem;
+
+    border: 0.0625rem solid #e2e3e6;
+    border-radius: 0.5rem;
+
+    background: #fff;
+
+    color: #666970;
+}
+
+.widgetHeader button {
+    border: none;
+    background: transparent;
+
+    color: #4f8cff;
+
+    cursor: pointer;
+}
+
+.chartPlaceholder {
+    position: relative;
+
+    height: 14rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-top: 1.5rem;
+
+    border-radius: 0.6rem;
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            transparent,
+            transparent 3rem,
+            #f1f1f2 3rem,
+            #f1f1f2 3.0625rem
+        );
+
+    overflow: hidden;
+}
+
+.chartPlaceholder span {
+    z-index: 2;
+
+    padding: 0.5rem 0.8rem;
+
+    border-radius: 0.4rem;
+
+    background: #fff;
+
+    color: #b0b2b7;
+
+    font-size: 0.75rem;
+}
+
+.chartPlaceholderLine {
+    position: absolute;
+
+    left: 4%;
+    right: 4%;
+    bottom: 25%;
+
+    height: 35%;
+
+    border-top:
+        0.15rem solid #74a0f6;
+
+    border-radius: 50%;
+
+    transform:
+        rotate(-4deg)
+        skewX(-12deg);
+
+    opacity: 0.65;
+}
+
+/* -------------------- */
+/* Активность */
+/* -------------------- */
+
+.activityList {
+    display: flex;
+    flex-direction: column;
+
+    margin-top: 1.2rem;
+}
+
+.activityItem {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+
+    gap: 0.8rem;
+
+    padding: 1rem 0;
+
+    border-bottom:
+        0.0625rem solid #f0f0f1;
+}
+
+.activityItem:last-child {
+    border-bottom: 0;
+}
+
+.activityAvatar {
+    width: 2.4rem;
+    height: 2.4rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 0.6rem;
+
+    background: #edf3ff;
+    color: #477edc;
+
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.activityItem strong {
+    display: block;
+
+    font-size: 0.8rem;
+    color: #343539;
+}
+
+.activityItem p {
+    margin: 0.25rem 0 0;
+
+    color: #999ca2;
+    font-size: 0.72rem;
+}
+
+.activityItem time {
+    color: #b0b2b7;
+    font-size: 0.68rem;
+}
+
+/* -------------------- */
+/* Responsive */
+/* -------------------- */
+
+@media (max-width: 75rem) {
+    .dashboardBottomGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 60rem) {
+    .mainSection {
+        grid-template-columns: 12rem minmax(0, 1fr);
+    }
+
+    .mainContentBody {
+        padding: 1.3rem;
+    }
+}
+
+@media (max-width: 45rem) {
+    .mainSection {
+        display: block;
+    }
+
+    .sideBar {
+        display: none;
+    }
+
+    .mainContentHeader {
+        padding: 0 1rem;
+    }
+
+    .mainContentSearch {
+        width: 65%;
+    }
+
+    .dashboardHeading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboardGrid {
+        grid-template-columns: 1fr;
+    }
+}

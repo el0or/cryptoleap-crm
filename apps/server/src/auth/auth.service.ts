@@ -1,45 +1,149 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { IRegisterRequest, ILoginRequest, IAuthResponse } from '@cryptoleap_crm/shared';
+import { PrismaService } from '../prisma/prisma.service';
+import type { IAuthResponse } from '@cryptoleap_crm/shared';
+import type { LoginDto } from './dto/login.dto';
+import type { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly jwtService: JwtService,
+    ) {}
 
-  async register(data: IRegisterRequest): Promise<IAuthResponse> {
-    const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
-    if (existingUser) {
-      throw new BadRequestException('Пользователь с таким email уже существует');
+    async register(
+        data: RegisterDto,
+    ): Promise<IAuthResponse> {
+        const email =
+            data.email
+                .trim()
+                .toLowerCase();
+
+        const existingUser =
+            await this.prisma.user.findUnique({
+                where: {
+                    email,
+                },
+            });
+
+        if (existingUser) {
+            throw new BadRequestException(
+                'Пользователь с таким email уже существует',
+            );
+        }
+
+        const hashedPassword =
+            await bcrypt.hash(
+                data.password,
+                10,
+            );
+
+        const user =
+            await this.prisma.user.create({
+                data: {
+                    email,
+
+                    password:
+                        hashedPassword,
+
+                    name:
+                        data.name?.trim()
+                        || null,
+
+                    lastLoginAt:
+                        new Date(),
+
+                    lastSeenAt:
+                        new Date(),
+                },
+            });
+
+        return this.createAuthResponse(user);
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    
-    const user = await this.prisma.user.create({
-      data: {
-        email: data.email,
-        password: hashedPassword,
-      },
-    });
+    async login(
+        data: LoginDto,
+    ): Promise<IAuthResponse> {
+        const email =
+            data.email
+                .trim()
+                .toLowerCase();
 
-    return {
-      user: { id: user.id, email: user.email, role: user.role as any },
-    };
-  }
+        const user =
+            await this.prisma.user.findUnique({
+                where: {
+                    email,
+                },
+            });
 
-  async login(data: ILoginRequest): Promise<IAuthResponse> {
-    const user = await this.prisma.user.findUnique({ where: { email: data.email } });
-    if (!user) {
-      throw new UnauthorizedException('Неверный email или пароль');
+        if (!user) {
+            throw new UnauthorizedException(
+                'Неверный email или пароль',
+            );
+        }
+
+        const isPasswordValid =
+            await bcrypt.compare(
+                data.password,
+                user.password,
+            );
+
+        if (!isPasswordValid) {
+            throw new UnauthorizedException(
+                'Неверный email или пароль',
+            );
+        }
+
+        const updatedUser =
+            await this.prisma.user.update({
+                where: {
+                    id: user.id,
+                },
+
+                data: {
+                    lastLoginAt:
+                        new Date(),
+
+                    lastSeenAt:
+                        new Date(),
+                },
+            });
+
+        return this.createAuthResponse(
+            updatedUser,
+        );
     }
 
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Неверный email или пароль');
-    }
+    private async createAuthResponse(
+        user: {
+            id: string;
+            email: string;
+            name: string | null;
+            role: string;
+        },
+    ): Promise<IAuthResponse> {
+        const accessToken =
+            await this.jwtService.signAsync({
+                sub: user.id,
+                email: user.email,
+                role: user.role,
+            });
 
-    return {
-      user: { id: user.id, email: user.email, role: user.role as any },
-    };
-  }
+        return {
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+
+                role: user.role as
+                    | 'ADMIN'
+                    | 'MANAGER'
+                    | 'USER',
+            },
+
+            accessToken,
+        };
+    }
 }
