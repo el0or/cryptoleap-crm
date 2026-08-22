@@ -4,6 +4,7 @@ import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 import { IS_PUBLIC_KEY } from "./public.decorator";
 import type { JwtPayload } from "./jwt-payload.interface";
+import { AUTH_COOKIE_NAME } from "./auth-cookie";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -34,7 +35,7 @@ export class AuthGuard implements CanActivate {
                 .getRequest<Request>();
 
         const token =
-            this.extractTokenFromHeader(request);
+            this.extractTokenFromRequest(request);
 
         if (!token) {
             throw new UnauthorizedException(
@@ -58,13 +59,31 @@ export class AuthGuard implements CanActivate {
         return true;
     }
 
-    private extractTokenFromHeader(
-        request: Request,
-    ): string | undefined {
-        const [type, token] =
-            request.headers.authorization
-                ?.split(' ') ?? [];
+    // private extractTokenFromHeader(
+    //     request: Request,
+    // ): string | undefined {
+    //     const [type, token] =
+    //         request.headers.authorization
+    //             ?.split(' ') ?? [];
 
+    //     return type === 'Bearer'
+    //         ? token
+    //         : undefined;
+    // }
+
+    private extractTokenFromRequest(
+        request: Request
+    ): string | undefined {
+        const cookieToken = 
+            request.cookies?.[AUTH_COOKIE_NAME];
+
+        if (cookieToken) {
+            return cookieToken;
+        }
+
+        const [type, token] = 
+            request.headers.authorization?.split(' ') ?? [];
+        
         return type === 'Bearer'
             ? token
             : undefined;

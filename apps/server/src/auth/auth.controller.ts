@@ -1,8 +1,15 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { Public } from './public.decorator';
+import type { Request, response, Response } from 'express';
+import { AUTH_COOKIE_NAME, getAuthCookieOptions } from './auth-cookie';
+import type { JwtPayload } from './jwt-payload.interface';
+
+type AuthenticatedRequest = Request & {
+  user: JwtPayload;
+};
 
 @Controller('api/auth')
 export class AuthController {
@@ -24,10 +31,39 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('login')
     async login(
-        @Body() data: LoginDto,
+        @Body() dto: LoginDto,
+        @Res({ passthrough: true }) response: Response, 
     ) {
-        return this.authService.login(
-            data,
+        const result = await this.authService.login(dto);
+
+        response.cookie(
+            AUTH_COOKIE_NAME,
+            result.accessToken,
+            getAuthCookieOptions(),
+        )
+
+        const { accessToken, ...data } = result;
+        
+        return data;
+    }
+
+    @Get('me')
+    me(
+        @Req() request: AuthenticatedRequest,
+    ) {
+        return request.user;
+    }
+
+    @Post('logout')
+    @Public()
+    @HttpCode(HttpStatus.NO_CONTENT)
+    logout(
+    @Res({ passthrough: true })
+        response: Response,
+    ) {
+        response.clearCookie(
+            AUTH_COOKIE_NAME,
+            getAuthCookieOptions(),
         );
     }
 }
