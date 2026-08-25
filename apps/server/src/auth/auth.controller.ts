@@ -51,7 +51,11 @@ export class AuthController {
     me(
         @Req() request: AuthenticatedRequest,
     ) {
-        return request.user;
+        return {
+            id: request.user.sub,
+            email: request.user.email,
+            role: request.user.role,
+        };
     }
 
     @Post('logout')
