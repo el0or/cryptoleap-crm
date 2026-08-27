@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import styles from './AuthPage.module.css';
-import type { IAuthResponse, ILoginRequest, IRegisterRequest } from '@cryptoleap_crm/shared';
+import { type FormEvent, useState } from 'react';
+import type { ILoginRequest, IRegisterRequest } from '@cryptoleap_crm/shared';
 import { useNavigate } from 'react-router-dom';
+import styles from './AuthPage.module.css';
+import { useAuth } from '../../auth/useAuth';
+import { ApiError } from '../../api/http';
 
 interface InputFieldProps {
   label: string;
@@ -26,40 +28,36 @@ const InputField = ({ label, type, value, onChange }: InputFieldProps) => (
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const { login, register } = useAuth();
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
     setError(null);
     setIsLoading(true);
 
-    const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
-    const payload: ILoginRequest | IRegisterRequest = { email, password };
-
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Ошибка запроса');
+      if (isLoginMode) {
+        const payload: ILoginRequest = { email, password };
+        await login(payload);
+      } else {
+        const payload: IRegisterRequest = { email, password };
+        await register(payload);
       }
 
-      const authData = data as IAuthResponse;
-      console.log('Успех!', authData);
-      alert(`Успешно! Добро пожаловать, ${authData.user.email}`);
       navigate('/main');
-      
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+        return;
+      }
+
+      setError('Не удалось выполнить запрос');
     } finally {
       setIsLoading(false);
     }
@@ -80,20 +78,20 @@ const AuthPage = () => {
             <form className={styles.form} onSubmit={handleSubmit}>
               <InputField label="Логин" type="text" value={email} onChange={setEmail} />
               <InputField label="Пароль" type="password" value={password} onChange={setPassword} />
-              
-              {error && <div style={{ color: '#e1523c', fontSize: '13px', textAlign: 'center', marginTop: '0.5rem' }}>{error}</div>}
 
-              <button 
-                type="submit" 
-                className={styles.submitButton}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Загрузка...' : (isLoginMode ? 'Войти' : 'Создать аккаунт')}
+              {error && (
+                <div style={{ color: '#e1523c', fontSize: '13px', textAlign: 'center', marginTop: '0.5rem' }}>
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" className={styles.submitButton} disabled={isLoading}>
+                {isLoading ? 'Загрузка...' : isLoginMode ? 'Войти' : 'Создать аккаунт'}
               </button>
             </form>
 
-            <a 
-              href="#" 
+            <a
+              href="#"
               className={styles.toggleLink}
               onClick={(e) => {
                 e.preventDefault();

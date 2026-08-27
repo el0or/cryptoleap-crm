@@ -21,10 +21,19 @@ export class AuthController {
     @Post('register')
     async register(
         @Body() data: RegisterDto,
+        @Res({ passthrough: true }) response: Response,
     ) {
-        return this.authService.register(
-            data,
-        );
+    const result = await this.authService.register(data);
+
+    response.cookie(
+        AUTH_COOKIE_NAME,
+        result.accessToken,
+        getAuthCookieOptions(),
+    );
+
+    const { accessToken, ...authResponse } = result;
+
+    return authResponse;
     }
 
     @Public()

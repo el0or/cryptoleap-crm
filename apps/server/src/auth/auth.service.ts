@@ -2,9 +2,14 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import type { IAuthResponse } from '@cryptoleap_crm/shared';
+import type { IAuthResponse, UserRole } from '@cryptoleap_crm/shared';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
+
+type AuthResult = {
+    user: IAuthResponse['user'];
+    accessToken: string;
+};
 
 @Injectable()
 export class AuthService {
@@ -15,7 +20,7 @@ export class AuthService {
 
     async register(
         data: RegisterDto,
-    ): Promise<IAuthResponse> {
+    ): Promise<AuthResult> {
         const email =
             data.email
                 .trim()
@@ -65,7 +70,7 @@ export class AuthService {
 
     async login(
         data: LoginDto,
-    ): Promise<IAuthResponse> {
+    ): Promise<AuthResult> {
         const email =
             data.email
                 .trim()
@@ -123,7 +128,7 @@ export class AuthService {
             name: string | null;
             role: string;
         },
-    ): Promise<IAuthResponse> {
+        ): Promise<AuthResult> {
         const accessToken =
             await this.jwtService.signAsync({
                 sub: user.id,
@@ -136,11 +141,7 @@ export class AuthService {
                 id: user.id,
                 email: user.email,
                 name: user.name,
-
-                role: user.role as
-                    | 'ADMIN'
-                    | 'MANAGER'
-                    | 'USER',
+                role: user.role as UserRole
             },
 
             accessToken,
