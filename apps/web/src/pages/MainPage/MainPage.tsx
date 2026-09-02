@@ -1,4 +1,8 @@
 import styles from './MainPage.module.css';
+import { useEffect, useState } from 'react';
+import type { IDashboardSummary } from '@cryptoleap_crm/shared';
+import { getDashboardSummaryRequest } from '../../api/dashboard.api';
+import { sendHeartbeatRequest } from '../../api/presence.api';
 
 type DashboardCard = {
     id: number;
@@ -8,50 +12,84 @@ type DashboardCard = {
     type?: 'default' | 'success' | 'warning' | 'danger';
 };
 
-const dashboardCards: DashboardCard[] = [
+const createDashboardCards = (summary: IDashboardSummary | null): DashboardCard[] => [
     {
         id: 1,
         title: 'Пользователи онлайн',
-        value: 18,
+        value: summary?.usersOnline ?? '—',
         description: 'Сейчас в системе',
         type: 'success',
     },
     {
         id: 2,
         title: 'Всего пользователей',
-        value: 124,
+        value: summary?.usersTotal ?? '—',
         description: 'Зарегистрировано',
     },
     {
         id: 3,
         title: 'Активные задачи',
-        value: 37,
+        value: summary?.tasksActive ?? '—',
         description: 'На данный момент',
         type: 'warning',
     },
     {
         id: 4,
         title: 'Завершённые задачи',
-        value: 286,
+        value: summary?.tasksCompleted ?? '—',
         description: 'За всё время',
         type: 'success',
     },
     {
         id: 5,
         title: 'Просроченные задачи',
-        value: 6,
+        value: summary?.tasksOverdue ?? '—',
         description: 'Требуют внимания',
         type: 'danger',
     },
     {
         id: 6,
         title: 'Создано сегодня',
-        value: 14,
+        value: summary?.tasksCreatedToday ?? '—',
         description: 'Новых задач',
     },
 ];
 
 const MainPage = () => {
+    const [summary, setSummary] = useState<IDashboardSummary| null>(null);
+    const [dashboardError, setDashboardError] = useState<string | null>(null);
+    const dashboardCards = createDashboardCards(summary);
+
+    const loadDashboard = async () => {
+        try {
+            const data = await getDashboardSummaryRequest();
+
+            setSummary(data);
+            setDashboardError(null);
+        } catch {
+            setDashboardError("Не удалось загрузить данные дашборда");
+        }
+    };
+
+    useEffect(() => {
+        const updatePresence = async () => {
+            try {
+                await sendHeartbeatRequest();
+                await loadDashboard();
+            } catch {
+                return;
+            }
+        }
+
+        updatePresence();
+
+        const interval = window.setInterval(updatePresence, 30_000);
+
+        return () => {
+            window.clearInterval(interval)
+        };
+    }, []);
+
     const handleAddWidget = () => {
         // Потом здесь можно открыть modal
         // с выбором доступных виджетов.
@@ -137,6 +175,11 @@ const MainPage = () => {
 
                 <div className={styles.mainContentBody}>
                     <div className={styles.dashboardHeading}>
+                        
+                        {dashboardError && (
+                            <p>{dashboardError}</p>
+                        )}
+                        
                         <div>
                             <h1>Главная</h1>
                             <p>

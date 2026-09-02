@@ -24,3 +24,12 @@ export interface IRegisterRequest {
     password: string;
     name?: string;
 }
+
+export interface IDashboardSummary {
+    usersOnline: number;
+    usersTotal: number;
+    tasksActive: number;
+    tasksCompleted: number;
+    tasksOverdue: number;
+    tasksCreatedToday: number;
+}

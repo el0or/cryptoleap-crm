@@ -1,6 +1,6 @@
-import { Children, type PropsWithChildren, useCallback, useEffect, useMemo, useState } from "react";
+import { type PropsWithChildren, useCallback, useEffect, useMemo, useState } from "react";
 import type { IAuthResponse } from "@cryptoleap_crm/shared";
-import { getCurrentUserRequest, loginRequest, logoutRequest, registerRequest } from '../api/auth.api';
+import { getCurrentUserRequest, loginRequest, logoutRequest, registerRequest } from '../api/api.auth.ts';
 import { ApiError } from "../api/http";
 import { AuthContext } from "./AuthContext";
 import type { ILoginRequest } from "@cryptoleap_crm/shared";
@@ -8,7 +8,7 @@ import type { IRegisterRequest } from "@cryptoleap_crm/shared";
 
 type AuthUser = IAuthResponse['user'];
 
-export const AuthProvider = ({ Children }: PropsWithChildren) => {
+export const AuthProvider = ({ children }: PropsWithChildren) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -65,7 +65,7 @@ export const AuthProvider = ({ Children }: PropsWithChildren) => {
 
     return (
         <AuthContext.Provider value={value}>
-            {Children}
+            {children}
         </AuthContext.Provider>
     );
 }
