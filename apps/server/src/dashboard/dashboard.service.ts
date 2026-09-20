@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { TaskStatus } from "@prisma/client";
-import type { IDashboardSummary } from "@cryptoleap_crm/shared";
+import { DEFAULT_DASHBOARD_WIDGETS, type DashboardWidgetType, type IDashboardLayout, type IDashboardSummary } from '@cryptoleap_crm/shared';
 import { PrismaService } from "src/prisma/prisma.service";
 import { PresenceService } from "src/presence/presence.service";
 
@@ -70,5 +70,48 @@ export class DashboardService {
             tasksOverdue,
             tasksCreatedToday,
         };
+    }
+
+    async getLayout(userId: string): Promise<IDashboardLayout> {
+        const layout = await this.prisma.dashboardLayout.findUnique({
+            where: {
+                userId,
+            },
+            select: {
+                widgets: true,
+            },
+        });
+
+        if (!layout) {
+            return {
+                widgets: [...DEFAULT_DASHBOARD_WIDGETS]
+            };
+        }
+
+        return {
+            widgets: layout.widgets as DashboardWidgetType[],
+        };
+    }
+
+    async updateLayout(userId: string, widgets: DashboardWidgetType[]): Promise<IDashboardLayout> {
+        const layout = await this.prisma.dashboardLayout.upsert({
+            where: {
+                userId,
+            },
+            update: {
+                widgets,
+            },
+            create: {
+                userId,
+                widgets,
+            },
+            select: {
+                widgets: true,
+            },
+        });
+
+        return {
+            widgets: layout.widgets as DashboardWidgetType[],
+        }
     }
 }

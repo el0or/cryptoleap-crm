@@ -1,64 +1,68 @@
 import styles from './MainPage.module.css';
 import { useEffect, useState } from 'react';
-import type { IDashboardSummary } from '@cryptoleap_crm/shared';
-import { getDashboardSummaryRequest } from '../../api/dashboard.api';
+import { DASHBOARD_WIDGET_TYPES , type DashboardWidgetType, type IDashboardSummary, type IDashboardLayout } from '@cryptoleap_crm/shared';
+import { getDashboardSummaryRequest, getDashboardLayoutRequest, updateDashboardLayoutRequest } from '../../api/dashboard.api';
 import { sendHeartbeatRequest } from '../../api/presence.api';
 
 type DashboardCard = {
-    id: number;
+    id: DashboardWidgetType;
     title: string;
     value: string | number;
     description: string;
     type?: 'default' | 'success' | 'warning' | 'danger';
 };
 
-const createDashboardCards = (summary: IDashboardSummary | null): DashboardCard[] => [
-    {
-        id: 1,
+const createDashboardCardRegistry = (summary: IDashboardSummary | null): Record<DashboardWidgetType, DashboardCard> => ({
+    USERS_ONLINE: {
+        id: 'USERS_ONLINE',
         title: 'Пользователи онлайн',
         value: summary?.usersOnline ?? '—',
         description: 'Сейчас в системе',
         type: 'success',
     },
-    {
-        id: 2,
+    USERS_TOTAL: {
+        id: 'USERS_TOTAL',
         title: 'Всего пользователей',
         value: summary?.usersTotal ?? '—',
         description: 'Зарегистрировано',
     },
-    {
-        id: 3,
+    TASKS_ACTIVE: {
+        id: 'TASKS_ACTIVE',
         title: 'Активные задачи',
         value: summary?.tasksActive ?? '—',
         description: 'На данный момент',
         type: 'warning',
     },
-    {
-        id: 4,
+    TASKS_COMPLETED: {
+        id: 'TASKS_COMPLETED',
         title: 'Завершённые задачи',
         value: summary?.tasksCompleted ?? '—',
         description: 'За всё время',
         type: 'success',
     },
-    {
-        id: 5,
+    TASKS_OVERDUE: {
+        id: 'TASKS_OVERDUE',
         title: 'Просроченные задачи',
         value: summary?.tasksOverdue ?? '—',
         description: 'Требуют внимания',
         type: 'danger',
     },
-    {
-        id: 6,
+    TASKS_CREATED_TODAY: {
+        id: 'TASKS_CREATED_TODAY',
         title: 'Создано сегодня',
         value: summary?.tasksCreatedToday ?? '—',
         description: 'Новых задач',
     },
-];
+});
 
 const MainPage = () => {
-    const [summary, setSummary] = useState<IDashboardSummary| null>(null);
+    const [summary, setSummary] = useState<IDashboardSummary | null>(null);
+    const [layout, setLayout] = useState<IDashboardLayout | null>(null);
     const [dashboardError, setDashboardError] = useState<string | null>(null);
-    const dashboardCards = createDashboardCards(summary);
+    const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
+    const [openedCardMenu, setOpenedCardMenu] = useState<DashboardWidgetType | null>(null);
+    const cardRegistry = createDashboardCardRegistry(summary);
+    const dashboardCards = layout?.widgets.map(widgetType => cardRegistry[widgetType]) ?? [];
 
     const loadDashboard = async () => {
         try {
@@ -72,16 +76,34 @@ const MainPage = () => {
     };
 
     useEffect(() => {
+        const initializeDashboard = async () => {
+            try {
+                await sendHeartbeatRequest();
+
+                const [summaryData, layoutData] = await Promise.all([
+                    getDashboardSummaryRequest(),
+                    getDashboardLayoutRequest(),
+                ]);
+
+                setSummary(summaryData);
+                setLayout(layoutData);
+                setDashboardError(null);
+            } catch {
+                setDashboardError("Не удалось загрузить данные дашборда");
+            }
+        }
+
         const updatePresence = async () => {
             try {
                 await sendHeartbeatRequest();
-                await loadDashboard();
+                const summaryData = await getDashboardSummaryRequest();
+                setSummary(summaryData);
             } catch {
                 return;
             }
         }
 
-        updatePresence();
+        initializeDashboard();
 
         const interval = window.setInterval(updatePresence, 30_000);
 
@@ -90,11 +112,43 @@ const MainPage = () => {
         };
     }, []);
 
-    const handleAddWidget = () => {
-        // Потом здесь можно открыть modal
-        // с выбором доступных виджетов.
-        console.log('Открыть меню добавления виджетов');
+    const handleAddWidget = async (widget: DashboardWidgetType) => {
+        if (!layout || layout.widgets.includes(widget)) {
+            return;
+        }
+
+        const widgets = [...layout.widgets, widget];
+
+        try {
+            const updatedLayout = await updateDashboardLayoutRequest(widgets);
+
+            setLayout(updatedLayout);
+            setDashboardError(null);
+        } catch {
+            setDashboardError('Не удалось добавить виджет');
+        }
     };
+
+    const handleRemoveWidget = async (widget: DashboardWidgetType) => {
+        if (!layout) {
+            return;
+        }
+
+        const widgets = layout.widgets.filter((item) => item !== widget);
+
+        try {
+            const updatedLayout = await updateDashboardLayoutRequest(widgets);
+
+            setLayout(updatedLayout);
+            setOpenedCardMenu(null);
+        } catch {
+            setDashboardError('Не удалось удалить виджет');
+        }
+    };
+
+    const availableWidgets = Object.values(DASHBOARD_WIDGET_TYPES).filter((widget => {
+        return !layout?.widgets.includes(widget);
+    }));
 
     return (
         <div className={styles.mainSection}>
@@ -190,7 +244,7 @@ const MainPage = () => {
                         <button
                             type="button"
                             className={styles.addWidgetButton}
-                            onClick={handleAddWidget}
+                            onClick={() => setIsWidgetModalOpen(true)}
                         >
                             <span>+</span>
                             Добавить виджет
@@ -212,13 +266,23 @@ const MainPage = () => {
                                         {card.title}
                                     </span>
 
-                                    <button
-                                        type="button"
-                                        className={styles.cardMenu}
-                                        aria-label="Настройки виджета"
-                                    >
-                                        •••
-                                    </button>
+                                    <div className={styles.cardMenuWrapper}>
+                                        <button
+                                            type="button"
+                                            className={styles.cardMenu}
+                                            aria-label="Настройки виджета"
+                                            onClick={() => setOpenedCardMenu(openedCardMenu === card.id ? null : card.id )}
+                                        >
+                                            •••
+                                        </button>
+                                        {openedCardMenu === card.id && (
+                                            <div className={styles.cardMenuDropdown}>
+                                            <button type="button" onClick={() => handleRemoveWidget(card.id)}>
+                                                Удалить с главной
+                                            </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <strong className={styles.cardValue}>
@@ -243,7 +307,7 @@ const MainPage = () => {
                         <button
                             type="button"
                             className={styles.emptyWidget}
-                            onClick={handleAddWidget}
+                            onClick={() => setIsWidgetModalOpen(true)}
                         >
                             <span className={styles.emptyWidgetIcon}>
                                 +
@@ -364,6 +428,48 @@ const MainPage = () => {
                     </section>
                 </div>
             </main>
+            {isWidgetModalOpen && (
+                <div className={styles.modalOverlay} onClick={() => setIsWidgetModalOpen(false)}>
+                    <div className={styles.widgetModal} onClick={(event) => event.stopPropagation()}>
+                    <div className={styles.widgetModalHeader}>
+                        <div>
+                        <h2>Добавить виджет</h2>
+                        <p>Выберите карточку для главной страницы</p>
+                        </div>
+
+                        <button type="button" onClick={() => setIsWidgetModalOpen(false)}>
+                        ×
+                        </button>
+                    </div>
+
+                    <div className={styles.widgetModalList}>
+                        {availableWidgets.length > 0 ? (
+                        availableWidgets.map((widget) => {
+                            const card = cardRegistry[widget];
+
+                            return (
+                            <button
+                                key={widget}
+                                type="button"
+                                className={styles.widgetModalItem}
+                                onClick={() => handleAddWidget(widget)}
+                            >
+                                <div>
+                                <strong>{card.title}</strong>
+                                <span>{card.description}</span>
+                                </div>
+
+                                <span>+</span>
+                            </button>
+                            );
+                        })
+                        ) : (
+                        <p className={styles.widgetModalEmpty}>Все доступные виджеты уже добавлены</p>
+                        )}
+                    </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

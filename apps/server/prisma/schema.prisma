@@ -21,6 +21,7 @@ model User {
 
   createdTasks  Task[] @relation("CreatedTasks")
   assignedTasks Task[] @relation("AssignedTasks")
+  dashboardLayout DashboardLayout?
 
   @@index([lastSeenAt])
 }
@@ -70,4 +71,15 @@ model Task {
   @@index([status])
   @@index([status, dueAt])
   @@index([createdAt])
+}
+
+model DashboardLayout {
+  id      String @id @default(uuid())
+  userId  String @unique
+  widgets Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

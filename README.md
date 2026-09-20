@@ -154,19 +154,15 @@ npx prisma studio
 
 ---
 
-# 🚀 Запуск Backend
+# 🚀 Запуск Backend и Frontend
 
-Откройте первый терминал:
-
-```bash
-cd apps/server
-```
-
-Запустите сервер разработки:
+Из корня проекта запустите:
 
 ```bash
-npm run start:dev
+npm run dev
 ```
+
+Одна команда запустит NestJS и Vite параллельно. Оба процесса останавливаются через `Ctrl+C`.
 
 Backend будет доступен по адресу:
 
@@ -175,20 +171,6 @@ http://localhost:3000
 ```
 
 ---
-
-# 🌐 Запуск Frontend
-
-Откройте второй терминал:
-
-```bash
-cd apps/web
-```
-
-Запустите Vite:
-
-```bash
-npm run dev
-```
 
 Frontend будет доступен по адресу:
 
@@ -203,13 +185,10 @@ http://localhost:5173
 После запуска проекта структура процессов будет выглядеть следующим образом:
 
 ```text
-Terminal 1
-└── apps/server
-    └── npm run start:dev
-
-Terminal 2
-└── apps/web
-    └── npm run dev
+Terminal
+└── npm run dev
+    ├── Backend (NestJS)
+    └── Frontend (Vite)
 
 Docker
 └── PostgreSQL
@@ -273,20 +252,22 @@ npm install
 npm install
 ```
 
-## Запуск Frontend
+## Запуск Backend и Frontend
 
 ```bash
-cd apps/web
-
 npm run dev
 ```
 
-## Запуск Backend
+## Запуск Backend отдельно
 
 ```bash
-cd apps/server
+npm run start:dev --workspace=server
+```
 
-npm run start:dev
+## Запуск Frontend отдельно
+
+```bash
+npm run dev --workspace=web
 ```
 
 ## Генерация Prisma Client

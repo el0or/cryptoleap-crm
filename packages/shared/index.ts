@@ -33,3 +33,24 @@ export interface IDashboardSummary {
     tasksOverdue: number;
     tasksCreatedToday: number;
 }
+
+export const DASHBOARD_WIDGET_TYPES = {
+    USERS_ONLINE: 'USERS_ONLINE',
+    USERS_TOTAL: 'USERS_TOTAL',
+    TASKS_ACTIVE: 'TASKS_ACTIVE',
+    TASKS_COMPLETED: 'TASKS_COMPLETED',
+    TASKS_OVERDUE: 'TASKS_OVERDUE',
+    TASKS_CREATED_TODAY: 'TASKS_CREATED_TODAY',
+} as const;
+
+export type DashboardWidgetType = typeof DASHBOARD_WIDGET_TYPES[keyof typeof DASHBOARD_WIDGET_TYPES];
+
+export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetType[] = Object.values(DASHBOARD_WIDGET_TYPES);
+
+export interface IDashboardWidget {
+    type: DashboardWidgetType[];
+}
+
+export interface IDashboardLayout {
+  widgets: DashboardWidgetType[];
+}
