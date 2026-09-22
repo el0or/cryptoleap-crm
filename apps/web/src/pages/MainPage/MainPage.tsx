@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { DASHBOARD_WIDGET_TYPES , type DashboardWidgetType, type IDashboardSummary, type IDashboardLayout } from '@cryptoleap_crm/shared';
 import { getDashboardSummaryRequest, getDashboardLayoutRequest, updateDashboardLayoutRequest } from '../../api/dashboard.api';
 import { sendHeartbeatRequest } from '../../api/presence.api';
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type DashboardCard = {
     id: DashboardWidgetType;
@@ -54,6 +57,89 @@ const createDashboardCardRegistry = (summary: IDashboardSummary | null): Record<
         description: 'Новых задач',
     },
 });
+
+// drag-and-drop
+
+type SortableDashboardCardProps = {
+    card: DashboardCard;
+    openedCardMenu: DashboardWidgetType | null;
+    setOpenedCardMenu: (widget: DashboardWidgetType | null) => void;
+    onRemove: (widget: DashboardWidgetType) => void;
+};
+
+const SortableDashboardCard = ({
+    card,
+    openedCardMenu,
+    setOpenedCardMenu,
+    onRemove,
+    }: SortableDashboardCardProps) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: card.id,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.6 : 1,
+    };
+
+    return (
+        <article 
+        ref={setNodeRef}
+        style={style}
+        className={`${styles.dashboardCard} ${card.type ? styles[card.type] : ''}`}
+        {...attributes}
+        >
+             <div className={styles.cardHeader}>
+                <span className={styles.cardTitle}>{card.title}</span>
+
+                <div className={styles.cardActions}>
+                <button
+                    type="button"
+                    className={styles.dragHandle}
+                    aria-label="Переместить виджет"
+                    {...listeners}
+                >
+                    ⋮⋮
+                </button>
+
+                <div className={styles.cardMenuWrapper}>
+                    <button
+                    type="button"
+                    className={styles.cardMenu}
+                    aria-label="Настройки виджета"
+                    onClick={() => setOpenedCardMenu(openedCardMenu === card.id ? null : card.id)}
+                    >
+                    •••
+                    </button>
+
+                    {openedCardMenu === card.id && (
+                    <div className={styles.cardMenuDropdown}>
+                        <button type="button" onClick={() => onRemove(card.id)}>
+                        Удалить с главной
+                        </button>
+                    </div>
+                    )}
+                </div>
+                </div>
+            </div>
+
+            <strong className={styles.cardValue}>{card.value}</strong>
+
+            <span className={styles.cardDescription}>{card.description}</span>
+
+            <div className={styles.fakeChart}>
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+            </div>
+        </article>
+    );
+};
+
 
 const MainPage = () => {
     const [summary, setSummary] = useState<IDashboardSummary | null>(null);
@@ -149,6 +235,32 @@ const MainPage = () => {
     const availableWidgets = Object.values(DASHBOARD_WIDGET_TYPES).filter((widget => {
         return !layout?.widgets.includes(widget);
     }));
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        if (!layout) return;
+
+        const { active, over } = event;
+
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = layout.widgets.indexOf(active.id as DashboardWidgetType);
+        const newIndex = layout.widgets.indexOf(over.id as DashboardWidgetType);
+
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const newWidgets = arrayMove(layout.widgets, oldIndex, newIndex);
+
+        setLayout({ ...layout, widgets: newWidgets });
+
+        try {
+            const updatedLayout = await updateDashboardLayoutRequest(newWidgets);
+            setLayout(updatedLayout);
+            setDashboardError(null);
+        } catch {
+            setLayout(layout); // revert to previous layout on error
+            setDashboardError('Не удалось обновить порядок виджетов');
+        }
+    }
 
     return (
         <div className={styles.mainSection}>
@@ -251,71 +363,30 @@ const MainPage = () => {
                         </button>
                     </div>
 
-                    <section className={styles.dashboardGrid}>
-                        {dashboardCards.map((card) => (
-                            <article
+                    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={layout?.widgets ?? []} strategy={rectSortingStrategy}>
+                            <section className={styles.dashboardGrid}>
+                            {dashboardCards.map((card) => (
+                                <SortableDashboardCard
                                 key={card.id}
-                                className={`${styles.dashboardCard} ${
-                                    card.type
-                                        ? styles[card.type]
-                                        : ''
-                                }`}
+                                card={card}
+                                openedCardMenu={openedCardMenu}
+                                setOpenedCardMenu={setOpenedCardMenu}
+                                onRemove={handleRemoveWidget}
+                                />
+                            ))}
+
+                            <button
+                                type="button"
+                                className={styles.emptyWidget}
+                                onClick={() => setIsWidgetModalOpen(true)}
                             >
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.cardTitle}>
-                                        {card.title}
-                                    </span>
-
-                                    <div className={styles.cardMenuWrapper}>
-                                        <button
-                                            type="button"
-                                            className={styles.cardMenu}
-                                            aria-label="Настройки виджета"
-                                            onClick={() => setOpenedCardMenu(openedCardMenu === card.id ? null : card.id )}
-                                        >
-                                            •••
-                                        </button>
-                                        {openedCardMenu === card.id && (
-                                            <div className={styles.cardMenuDropdown}>
-                                            <button type="button" onClick={() => handleRemoveWidget(card.id)}>
-                                                Удалить с главной
-                                            </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <strong className={styles.cardValue}>
-                                    {card.value}
-                                </strong>
-
-                                <span className={styles.cardDescription}>
-                                    {card.description}
-                                </span>
-
-                                <div className={styles.fakeChart}>
-                                    <span />
-                                    <span />
-                                    <span />
-                                    <span />
-                                    <span />
-                                    <span />
-                                </div>
-                            </article>
-                        ))}
-
-                        <button
-                            type="button"
-                            className={styles.emptyWidget}
-                            onClick={() => setIsWidgetModalOpen(true)}
-                        >
-                            <span className={styles.emptyWidgetIcon}>
-                                +
-                            </span>
-
-                            <span>Добавить плитку</span>
-                        </button>
-                    </section>
+                                <span className={styles.emptyWidgetIcon}>+</span>
+                                <span>Добавить плитку</span>
+                            </button>
+                            </section>
+                        </SortableContext>
+                    </DndContext>
 
                     <section className={styles.dashboardBottomGrid}>
                         <article className={styles.largeWidget}>

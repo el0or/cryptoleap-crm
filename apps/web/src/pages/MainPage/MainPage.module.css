@@ -689,6 +689,29 @@
   opacity: 0.6;
 }
 
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dragHandle {
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.45;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandle:hover {
+  opacity: 0.8;
+}
+
 @media (max-width: 75rem) {
     .dashboardBottomGrid {
         grid-template-columns: 1fr;
