@@ -1,21 +1,70 @@
 import styles from './MainPage.module.css';
 import { useEffect, useState } from 'react';
-import { DASHBOARD_WIDGET_TYPES , type DashboardWidgetType, type IDashboardSummary, type IDashboardLayout } from '@cryptoleap_crm/shared';
-import { getDashboardSummaryRequest, getDashboardLayoutRequest, updateDashboardLayoutRequest } from '../../api/dashboard.api';
+import {
+    DASHBOARD_WIDGET_TYPES,
+    type DashboardActivityPeriod,
+    type DashboardWidgetType,
+    type IDashboardLayout,
+    type IDashboardSummary,
+    type IDashboardTaskActivityPoint,
+} from '@cryptoleap_crm/shared';
+import { getDashboardSummaryRequest, getDashboardLayoutRequest, updateDashboardLayoutRequest, getDashboardTaskActivityRequest } from '../../api/dashboard.api';
 import { sendHeartbeatRequest } from '../../api/presence.api';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+type DashboardCardWidgetType = Exclude<DashboardWidgetType, 'TASK_ACTIVITY' | 'RECENT_ACTIVITY'>;
+
 type DashboardCard = {
-    id: DashboardWidgetType;
+    id: DashboardCardWidgetType;
     title: string;
     value: string | number;
     description: string;
     type?: 'default' | 'success' | 'warning' | 'danger';
 };
 
-const createDashboardCardRegistry = (summary: IDashboardSummary | null): Record<DashboardWidgetType, DashboardCard> => ({
+type DashboardWidgetInfo = {
+  title: string;
+  description: string;
+};
+
+const dashboardWidgetInfo: Record<DashboardWidgetType, DashboardWidgetInfo> = {
+  USERS_ONLINE: {
+    title: 'Пользователи онлайн',
+    description: 'Количество пользователей в системе сейчас',
+  },
+  USERS_TOTAL: {
+    title: 'Всего пользователей',
+    description: 'Количество зарегистрированных пользователей',
+  },
+  TASKS_ACTIVE: {
+    title: 'Активные задачи',
+    description: 'Задачи в работе и ожидающие выполнения',
+  },
+  TASKS_COMPLETED: {
+    title: 'Завершённые задачи',
+    description: 'Количество завершённых задач',
+  },
+  TASKS_OVERDUE: {
+    title: 'Просроченные задачи',
+    description: 'Задачи с истёкшим сроком выполнения',
+  },
+  TASKS_CREATED_TODAY: {
+    title: 'Создано сегодня',
+    description: 'Количество созданных сегодня задач',
+  },
+  TASK_ACTIVITY: {
+    title: 'Активность задач',
+    description: 'Динамика создания и завершения задач',
+  },
+  RECENT_ACTIVITY: {
+    title: 'Последняя активность',
+    description: 'Последние действия пользователей',
+  },
+};
+
+const createDashboardCardRegistry = (summary: IDashboardSummary | null): Record<DashboardCardWidgetType, DashboardCard> => ({
     USERS_ONLINE: {
         id: 'USERS_ONLINE',
         title: 'Пользователи онлайн',
@@ -57,6 +106,20 @@ const createDashboardCardRegistry = (summary: IDashboardSummary | null): Record<
         description: 'Новых задач',
     },
 });
+
+const DASHBOARD_CARD_TYPES: DashboardCardWidgetType[] = [
+    'USERS_ONLINE',
+    'USERS_TOTAL',
+    'TASKS_ACTIVE',
+    'TASKS_COMPLETED',
+    'TASKS_OVERDUE',
+    'TASKS_CREATED_TODAY',
+];
+
+const DASHBOARD_LARGE_WIDGET_TYPES: DashboardWidgetType[] = [
+    'TASK_ACTIVITY',
+    'RECENT_ACTIVITY',
+];
 
 // drag-and-drop
 
@@ -140,6 +203,13 @@ const SortableDashboardCard = ({
     );
 };
 
+const formatActivityDate = (date: string) => {
+    return new Intl.DateTimeFormat('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+    }).format(new Date(`${date}T00:00:00`));
+};
+
 
 const MainPage = () => {
     const [summary, setSummary] = useState<IDashboardSummary | null>(null);
@@ -148,18 +218,38 @@ const MainPage = () => {
     const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
     const [openedCardMenu, setOpenedCardMenu] = useState<DashboardWidgetType | null>(null);
     const cardRegistry = createDashboardCardRegistry(summary);
-    const dashboardCards = layout?.widgets.map(widgetType => cardRegistry[widgetType]) ?? [];
+    const dashboardCards = layout?.widgets
+        .filter((widget): widget is DashboardCardWidgetType => (
+            DASHBOARD_CARD_TYPES.includes(widget as DashboardCardWidgetType)
+        ))
+        .map((widget) => cardRegistry[widget]) ?? [];
+    const largeWidgets = layout?.widgets.filter((widget) => DASHBOARD_LARGE_WIDGET_TYPES.includes(widget)) ?? [];
+    const [activityDays, setActivityDays] = useState<DashboardActivityPeriod>(7);
+    const [taskActivity, setTaskActivity] = useState<IDashboardTaskActivityPoint[]>([]);
 
-    const loadDashboard = async () => {
-        try {
-            const data = await getDashboardSummaryRequest();
-
-            setSummary(data);
-            setDashboardError(null);
-        } catch {
-            setDashboardError("Не удалось загрузить данные дашборда");
+    useEffect(() => {
+        if (!layout?.widgets.includes('TASK_ACTIVITY')) {
+            return;
         }
-    };
+
+        let isCancelled = false;
+
+        void getDashboardTaskActivityRequest(activityDays)
+            .then((data) => {
+                if (!isCancelled) {
+                    setTaskActivity(data);
+                }
+            })
+            .catch(() => {
+                if (!isCancelled) {
+                    setDashboardError('Не удалось загрузить данные активности задач');
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [layout?.widgets, activityDays]);
 
     useEffect(() => {
         const initializeDashboard = async () => {
@@ -261,6 +351,11 @@ const MainPage = () => {
             setDashboardError('Не удалось обновить порядок виджетов');
         }
     }
+
+    const activityMaxValue = Math.max(
+        ...taskActivity.flatMap((item) => [item.created, item.completed]),
+        1,
+    );
 
     return (
         <div className={styles.mainSection}>
@@ -388,115 +483,132 @@ const MainPage = () => {
                         </SortableContext>
                     </DndContext>
 
-                    <section className={styles.dashboardBottomGrid}>
-                        <article className={styles.largeWidget}>
-                            <div className={styles.widgetHeader}>
-                                <div>
-                                    <h2>Активность задач</h2>
-                                    <p>Последние 7 дней</p>
-                                </div>
-
-                                <select defaultValue="7">
-                                    <option value="7">7 дней</option>
-                                    <option value="30">30 дней</option>
-                                    <option value="90">90 дней</option>
-                                </select>
-                            </div>
-
-                            <div className={styles.chartPlaceholder}>
-                                <div
-                                    className={
-                                        styles.chartPlaceholderLine
-                                    }
-                                />
-
-                                <span>
-                                    Здесь позже будет график
-                                </span>
-                            </div>
-                        </article>
-
-                        <article className={styles.activityWidget}>
-                            <div className={styles.widgetHeader}>
-                                <div>
-                                    <h2>Последняя активность</h2>
-                                    <p>Действия пользователей</p>
-                                </div>
-
-                                <button type="button">
-                                    Все
-                                </button>
-                            </div>
-
-                            <div className={styles.activityList}>
-                                <div className={styles.activityItem}>
-                                    <div
-                                        className={
-                                            styles.activityAvatar
-                                        }
-                                    >
-                                        AK
-                                    </div>
-
+                    {largeWidgets.length > 0 && (
+                        <section className={styles.dashboardBottomGrid}>
+                            {largeWidgets.map((widget) => {
+                            if (widget === 'TASK_ACTIVITY') {
+                                return (
+                                <article key={widget} className={styles.largeWidget}>
+                                    <div className={styles.widgetHeader}>
                                     <div>
-                                        <strong>
-                                            Александр
-                                        </strong>
-
-                                        <p>
-                                            Закрыл задачу #128
-                                        </p>
+                                        <h2>Активность задач</h2>
+                                        <p>Последние {activityDays} дней</p>
                                     </div>
 
-                                    <time>5 мин</time>
-                                </div>
+                                    <div className={styles.widgetHeaderActions}>
+                                        <select
+                                            value={activityDays}
+                                            onChange={(event) => setActivityDays(Number(event.target.value) as DashboardActivityPeriod)}
+                                        >
+                                            <option value={7}>7 дней</option>
+                                            <option value={30}>30 дней</option>
+                                            <option value={90}>90 дней</option>
+                                        </select>
 
-                                <div className={styles.activityItem}>
-                                    <div
-                                        className={
-                                            styles.activityAvatar
-                                        }
-                                    >
-                                        MS
+                                        <button type="button" onClick={() => handleRemoveWidget(widget)}>
+                                        •••
+                                        </button>
+                                    </div>
                                     </div>
 
+                                    <div className={styles.activityChartLegend}>
+                                        <span>
+                                            <i className={styles.createdLegend} />
+                                            Создано
+                                        </span>
+
+                                        <span>
+                                            <i className={styles.completedLegend} />
+                                            Завершено
+                                        </span>
+                                    </div>
+
+                                    <div className={styles.activityChart}>
+                                        {taskActivity.map((point) => {
+                                            const createdHeight = (point.created / activityMaxValue) * 100;
+                                            const completedHeight = (point.completed / activityMaxValue) * 100;
+
+                                            return (
+                                            <div key={point.date} className={styles.activityChartColumn}>
+                                                <div className={styles.activityChartBars}>
+                                                <div
+                                                    className={styles.activityChartCreated}
+                                                    style={{ height: `${createdHeight}%` }}
+                                                    title={`Создано: ${point.created}`}
+                                                />
+
+                                                <div
+                                                    className={styles.activityChartCompleted}
+                                                    style={{ height: `${completedHeight}%` }}
+                                                    title={`Завершено: ${point.completed}`}
+                                                />
+                                                </div>
+
+                                                <span>{formatActivityDate(point.date)}</span>
+                                            </div>
+                                            );
+                                        })}
+                                    </div>
+                                </article>
+                                );
+                            }
+
+                            if (widget === 'RECENT_ACTIVITY') {
+                                return (
+                                <article key={widget} className={styles.activityWidget}>
+                                    <div className={styles.widgetHeader}>
                                     <div>
-                                        <strong>
-                                            Мария
-                                        </strong>
-
-                                        <p>
-                                            Создала новую задачу
-                                        </p>
+                                        <h2>Последняя активность</h2>
+                                        <p>Действия пользователей</p>
                                     </div>
 
-                                    <time>18 мин</time>
-                                </div>
-
-                                <div className={styles.activityItem}>
-                                    <div
-                                        className={
-                                            styles.activityAvatar
-                                        }
-                                    >
-                                        IV
+                                    <button type="button" onClick={() => handleRemoveWidget(widget)}>
+                                        •••
+                                    </button>
                                     </div>
 
-                                    <div>
-                                        <strong>
-                                            Иван
-                                        </strong>
+                                    <div className={styles.activityList}>
+                                    <div className={styles.activityItem}>
+                                        <div className={styles.activityAvatar}>AK</div>
 
-                                        <p>
-                                            Изменил статус проекта
-                                        </p>
+                                        <div>
+                                        <strong>Александр</strong>
+                                        <p>Закрыл задачу #128</p>
+                                        </div>
+
+                                        <time>5 мин</time>
                                     </div>
 
-                                    <time>42 мин</time>
-                                </div>
-                            </div>
-                        </article>
-                    </section>
+                                    <div className={styles.activityItem}>
+                                        <div className={styles.activityAvatar}>MS</div>
+
+                                        <div>
+                                        <strong>Мария</strong>
+                                        <p>Создала новую задачу</p>
+                                        </div>
+
+                                        <time>18 мин</time>
+                                    </div>
+
+                                    <div className={styles.activityItem}>
+                                        <div className={styles.activityAvatar}>IV</div>
+
+                                        <div>
+                                        <strong>Иван</strong>
+                                        <p>Изменил статус проекта</p>
+                                        </div>
+
+                                        <time>42 мин</time>
+                                    </div>
+                                    </div>
+                                </article>
+                                );
+                            }
+
+                            return null;
+                            })}
+                        </section>
+                    )}
                 </div>
             </main>
             {isWidgetModalOpen && (
@@ -516,7 +628,7 @@ const MainPage = () => {
                     <div className={styles.widgetModalList}>
                         {availableWidgets.length > 0 ? (
                         availableWidgets.map((widget) => {
-                            const card = cardRegistry[widget];
+                            const widgetInfo = dashboardWidgetInfo[widget];
 
                             return (
                             <button
@@ -526,8 +638,8 @@ const MainPage = () => {
                                 onClick={() => handleAddWidget(widget)}
                             >
                                 <div>
-                                <strong>{card.title}</strong>
-                                <span>{card.description}</span>
+                                <strong>{widgetInfo.title}</strong>
+                                <span>{widgetInfo.description}</span>
                                 </div>
 
                                 <span>+</span>

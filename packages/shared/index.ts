@@ -41,6 +41,8 @@ export const DASHBOARD_WIDGET_TYPES = {
     TASKS_COMPLETED: 'TASKS_COMPLETED',
     TASKS_OVERDUE: 'TASKS_OVERDUE',
     TASKS_CREATED_TODAY: 'TASKS_CREATED_TODAY',
+    TASK_ACTIVITY: 'TASK_ACTIVITY',
+    RECENT_ACTIVITY: 'RECENT_ACTIVITY',
 } as const;
 
 export type DashboardWidgetType = typeof DASHBOARD_WIDGET_TYPES[keyof typeof DASHBOARD_WIDGET_TYPES];
@@ -54,3 +56,13 @@ export interface IDashboardWidget {
 export interface IDashboardLayout {
   widgets: DashboardWidgetType[];
 }
+
+export const DASHBOARD_ACTIVITY_PERIOD = [7, 30, 90] as const;
+
+export type DashboardActivityPeriod = typeof DASHBOARD_ACTIVITY_PERIOD[number];
+
+export interface IDashboardTaskActivityPoint {
+    date: string,
+    created: number,
+    completed: number, 
+};
