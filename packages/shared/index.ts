@@ -66,3 +66,28 @@ export interface IDashboardTaskActivityPoint {
     created: number,
     completed: number, 
 };
+
+export const DASHBOARD_ACTIVITY_TYPES = {
+    TASK_CREATED: 'TASK_CREATED',
+    TASK_UPDATED: 'TASK_UPDATED',
+    TASK_STATUS_CHANGED: 'TASK_STATUS_CHANGED',
+    TASK_ASSIGNEE_CHANGED: 'TASK_ASSIGNEE_CHANGED',
+} as const;
+
+export type DashboardActivityType = typeof DASHBOARD_ACTIVITY_TYPES[keyof typeof DASHBOARD_ACTIVITY_TYPES];
+
+export interface IDashboardRecentActivityItem {
+    id: string;
+    type: DashboardActivityType;
+    message: string;
+    createdAt: string;
+    user: {
+        id: string;
+        name: string | null;
+        email: string;
+    };
+    task: {
+        id: string;
+        title: string;
+    } | null;
+}

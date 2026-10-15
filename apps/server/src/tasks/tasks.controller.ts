@@ -43,31 +43,12 @@ export class TasksController {
     }
 
     @Patch(':id')
-    update(
-        @Param('id')
-        id: string,
-
-        @Body()
-        dto: UpdateTaskDto,
-    ) {
-        return this.tasksService.update(
-            id,
-            dto,
-        );
+    update(@Req() request: AuthenticatedRequest, @Param('id') id: string, @Body() dto: UpdateTaskDto) {
+        return this.tasksService.update(request.user.sub, id, dto);
     }
 
     @Patch(':id/status')
-    updateStatus(
-        @Param('id')
-        id: string,
-
-        @Body()
-        dto: UpdateTaskStatusDto,
-    ) {
-        return this.tasksService
-            .updateStatus(
-                id,
-                dto,
-            );
+    updateStatus(@Req() request: AuthenticatedRequest, @Param('id') id: string, @Body() dto: UpdateTaskStatusDto) {
+        return this.tasksService.updateStatus(request.user.sub, id, dto);
     }
 }

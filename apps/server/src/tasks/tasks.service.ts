@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus, ActivityType } from "@prisma/client";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateTaskDto } from "./dto/create-task.dto";
 import { UpdateTaskDto } from "./dto/update-task.dto";
@@ -12,45 +12,50 @@ export class TasksService {
             PrismaService,
     ) {}
 
-    async create(
-        userId: string,
-        dto: CreateTaskDto,
-    ) {
+    async create(userId: string, dto: CreateTaskDto) {
         if (dto.assigneeId) {
-            await this.ensureUserExists(
-                dto.assigneeId,
-            );
+            await this.ensureUserExists(dto.assigneeId);
         }
 
-        return this.prisma.task.create({
-            data: {
-                title: dto.title.trim(),
-                description: dto.description ?.trim(),
-                priority: dto.priority,
-                dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
-                createdById: userId,
-                assigneeId: dto.assigneeId,
-            },
-
-            include: {
-                createdBy: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        role: true,
+        return this.prisma.$transaction(async (tx) => {
+            const task = await tx.task.create({
+                data: {
+                    title: dto.title.trim(),
+                    description: dto.description?.trim(),
+                    priority: dto.priority,
+                    dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
+                    createdById: userId,
+                    assigneeId: dto.assigneeId,
+                },
+                include: {
+                    createdBy: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            role: true,
+                        },
+                    },
+                    assignee: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            role: true,
+                        },
                     },
                 },
+            });
 
-                assignee: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        role: true,
-                    },
+            await tx.activityLog.create({
+                data: {
+                    type: ActivityType.TASK_CREATED,
+                    userId,
+                    taskId: task.id,
                 },
-            },
+            });
+
+            return task;
         });
     }
 
@@ -118,100 +123,103 @@ export class TasksService {
         return task;
     }
 
-    async update(
-        taskId: string,
-        dto: UpdateTaskDto,
-    ) {
-        await this.ensureTaskExists(
-            taskId,
-        );
+    async update(userId: string, taskId: string, dto: UpdateTaskDto) {
+        const currentTask = await this.getTaskOrThrow(taskId);
 
         if (dto.assigneeId) {
-            await this.ensureUserExists(
-                dto.assigneeId,
-            );
+            await this.ensureUserExists(dto.assigneeId);
         }
 
-        return this.prisma.task.update({
-            where: {
-                id: taskId,
-            },
+        const assigneeChanged = dto.assigneeId !== undefined && dto.assigneeId !== currentTask.assigneeId;
 
-            data: {
-                ...(dto.title !== undefined && {
-                    title: dto.title.trim(),
-                }),
-
-                ...(dto.description !== undefined && {
-                    description:
-                        dto.description
-                            ?.trim() ?? null,
-                }),
-
-                ...(dto.priority !== undefined && {
-                    priority:
-                        dto.priority,
-                }),
-
-                ...(dto.assigneeId !== undefined && {
-                    assigneeId:
-                        dto.assigneeId,
-                }),
-
-                ...(dto.dueAt !== undefined && {
-                    dueAt:
-                        dto.dueAt
-                            ? new Date(dto.dueAt)
-                            : null,
-                }),
-            },
-        });
-    }
-
-    async updateStatus(
-        taskId: string,
-        dto: UpdateTaskStatusDto,
-    ) {
-        await this.ensureTaskExists(
-            taskId,
-        );
-
-        return this.prisma.task.update({
-            where: {
-                id: taskId,
-            },
-
-            data: {
-                status:
-                    dto.status,
-
-                completedAt:
-                    dto.status === TaskStatus.DONE
-                        ? new Date()
-                        : null,
-            },
-        });
-    }
-
-    private async ensureTaskExists(
-        taskId: string,
-    ) {
-        const task =
-            await this.prisma.task.findUnique({
+        return this.prisma.$transaction(async (tx) => {
+            const task = await tx.task.update({
                 where: {
                     id: taskId,
                 },
-
-                select: {
-                    id: true,
+                data: {
+                    ...(dto.title !== undefined && {
+                        title: dto.title.trim(),
+                    }),
+                    ...(dto.description !== undefined && {
+                        description: dto.description?.trim() ?? null,
+                    }),
+                    ...(dto.priority !== undefined && {
+                        priority: dto.priority,
+                    }),
+                    ...(dto.assigneeId !== undefined && {
+                        assigneeId: dto.assigneeId,
+                    }),
+                    ...(dto.dueAt !== undefined && {
+                        dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
+                    }),
                 },
             });
 
-        if (!task) {
-            throw new NotFoundException(
-                'Задача не найдена',
-            );
+            await tx.activityLog.create({
+                data: {
+                    type: assigneeChanged ? ActivityType.TASK_ASSIGNEE_CHANGED : ActivityType.TASK_UPDATED,
+                    userId,
+                    taskId,
+                    metadata: assigneeChanged
+                        ? {
+                            fromAssigneeId: currentTask.assigneeId,
+                            toAssigneeId: dto.assigneeId,
+                        }
+                        : undefined,
+                },
+            });
+
+            return task;
+        });
+    }
+
+    async updateStatus(userId: string, taskId: string, dto: UpdateTaskStatusDto) {
+        const currentTask = await this.getTaskOrThrow(taskId);
+
+        if (currentTask.status === dto.status) {
+            return currentTask;
         }
+
+        return this.prisma.$transaction(async (tx) => {
+            const task = await tx.task.update({
+                where: {
+                    id: taskId,
+                },
+                data: {
+                    status: dto.status,
+                    completedAt: dto.status === TaskStatus.DONE ? new Date() : null,
+                },
+            });
+
+            await tx.activityLog.create({
+                data: {
+                    type: ActivityType.TASK_STATUS_CHANGED,
+                    userId,
+                    taskId,
+                    metadata: {
+                        fromStatus: currentTask.status,
+                        toStatus: dto.status,
+                    },
+                },
+            });
+
+            return task;
+        });
+    }
+
+    private async getTaskOrThrow(taskId: string) {
+        const task = await this.prisma.task.findUnique({
+            where: {
+                id: taskId,
+            },
+        });
+
+        if (!task) {
+            throw new NotFoundException('Задача не найдена');
+        }
+
+        return task;
     }
 
     private async ensureUserExists(

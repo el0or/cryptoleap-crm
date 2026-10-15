@@ -37,4 +37,14 @@ export class DashboardController {
         }
         return this.dashboardService.getTaskActivity(days as DashboardActivityPeriod);
     }
+
+    @Get('recent-activity')
+    getRecentActivity(
+        @Query('limit', new DefaultValuePipe(8), ParseIntPipe) limit: number
+    ) {
+        if (limit < 1 || limit > 20) {
+            throw new BadRequestException('Допустимое количество событий: от 1 до 20');
+        }
+        return this.dashboardService.getRecentActivity(limit);
+    }
 }

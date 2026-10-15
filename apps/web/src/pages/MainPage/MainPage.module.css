@@ -38,11 +38,11 @@
     box-sizing: border-box;
 }
 
-.mainSection button,
+/* .mainSection button,
 .mainSection input,
 .mainSection select {
     font: inherit;
-}
+} */
 
 .sideBar {
     position: relative;

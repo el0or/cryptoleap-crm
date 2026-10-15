@@ -7,8 +7,9 @@ import {
     type IDashboardLayout,
     type IDashboardSummary,
     type IDashboardTaskActivityPoint,
+    type IDashboardRecentActivityItem,
 } from '@cryptoleap_crm/shared';
-import { getDashboardSummaryRequest, getDashboardLayoutRequest, updateDashboardLayoutRequest, getDashboardTaskActivityRequest } from '../../api/dashboard.api';
+import { getDashboardSummaryRequest, getDashboardLayoutRequest, updateDashboardLayoutRequest, getDashboardTaskActivityRequest, getDashboardRecentActivityRequest } from '../../api/dashboard.api';
 import { sendHeartbeatRequest } from '../../api/presence.api';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -210,6 +211,39 @@ const formatActivityDate = (date: string) => {
     }).format(new Date(`${date}T00:00:00`));
 };
 
+const relativeTimeFormatter = new Intl.RelativeTimeFormat('ru-RU', {
+    numeric: 'auto',
+});
+
+const formatRelativeTime = (date: string) => {
+    const difference = new Date(date).getTime() - Date.now();
+    const absoluteDifference = Math.abs(difference);
+
+    if (absoluteDifference < 60_000) {
+        return 'только что';
+    }
+
+    if (absoluteDifference < 3_600_000) {
+        return relativeTimeFormatter.format(Math.round(difference / 60_000), 'minute');
+    }
+
+    if (absoluteDifference < 86_400_000) {
+        return relativeTimeFormatter.format(Math.round(difference / 3_600_000), 'hour');
+    }
+
+    return relativeTimeFormatter.format(Math.round(difference / 86_400_000), 'day');
+};
+
+const getUserInitials = (name: string | null, email: string) => {
+    const value = name?.trim() || email.split('@')[0];
+
+    return value
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase();
+};
 
 const MainPage = () => {
     const [summary, setSummary] = useState<IDashboardSummary | null>(null);
@@ -226,9 +260,61 @@ const MainPage = () => {
     const largeWidgets = layout?.widgets.filter((widget) => DASHBOARD_LARGE_WIDGET_TYPES.includes(widget)) ?? [];
     const [activityDays, setActivityDays] = useState<DashboardActivityPeriod>(7);
     const [taskActivity, setTaskActivity] = useState<IDashboardTaskActivityPoint[]>([]);
+    const [recentActivity, setRecentActivity] = useState<IDashboardRecentActivityItem[]>([]);
+    const hasTaskActivityWidget = layout?.widgets.includes('TASK_ACTIVITY') ?? false;
+    const hasRecentActivityWidget = layout?.widgets.includes('RECENT_ACTIVITY') ?? false;
 
     useEffect(() => {
-        if (!layout?.widgets.includes('TASK_ACTIVITY')) {
+        let isCancelled = false;
+
+        const initializeDashboard = async () => {
+            try {
+                await sendHeartbeatRequest();
+
+                const [summaryData, layoutData] = await Promise.all([
+                    getDashboardSummaryRequest(),
+                    getDashboardLayoutRequest(),
+                ]);
+
+                if (!isCancelled) {
+                    setSummary(summaryData);
+                    setLayout(layoutData);
+                    setDashboardError(null);
+                }
+            } catch {
+                if (!isCancelled) {
+                    setDashboardError('Не удалось загрузить данные дашборда');
+                }
+            }
+        };
+
+        const updatePresence = async () => {
+            try {
+                await sendHeartbeatRequest();
+                const summaryData = await getDashboardSummaryRequest();
+
+                if (!isCancelled) {
+                    setSummary(summaryData);
+                }
+            } catch {
+                return;
+            }
+        };
+
+        void initializeDashboard();
+
+        const interval = window.setInterval(() => {
+            void updatePresence();
+        }, 30_000);
+
+        return () => {
+            isCancelled = true;
+            window.clearInterval(interval);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!hasTaskActivityWidget) {
             return;
         }
 
@@ -249,44 +335,38 @@ const MainPage = () => {
         return () => {
             isCancelled = true;
         };
-    }, [layout?.widgets, activityDays]);
+    }, [hasTaskActivityWidget, activityDays]);
 
     useEffect(() => {
-        const initializeDashboard = async () => {
-            try {
-                await sendHeartbeatRequest();
-
-                const [summaryData, layoutData] = await Promise.all([
-                    getDashboardSummaryRequest(),
-                    getDashboardLayoutRequest(),
-                ]);
-
-                setSummary(summaryData);
-                setLayout(layoutData);
-                setDashboardError(null);
-            } catch {
-                setDashboardError("Не удалось загрузить данные дашборда");
-            }
+        if (!hasRecentActivityWidget) {
+            return;
         }
 
-        const updatePresence = async () => {
+        let isCancelled = false;
+
+        const loadRecentActivity = async () => {
             try {
-                await sendHeartbeatRequest();
-                const summaryData = await getDashboardSummaryRequest();
-                setSummary(summaryData);
+                const data = await getDashboardRecentActivityRequest(8);
+
+                if (!isCancelled) {
+                    setRecentActivity(data);
+                }
             } catch {
-                return;
+                if (!isCancelled) {
+                    setDashboardError('Не удалось загрузить последнюю активность');
+                }
             }
-        }
+        };
 
-        initializeDashboard();
+        void loadRecentActivity();
 
-        const interval = window.setInterval(updatePresence, 30_000);
+        const interval = window.setInterval(loadRecentActivity, 30_000);
 
         return () => {
-            window.clearInterval(interval)
+            isCancelled = true;
+            window.clearInterval(interval);
         };
-    }, []);
+    }, [hasRecentActivityWidget]);
 
     const handleAddWidget = async (widget: DashboardWidgetType) => {
         if (!layout || layout.widgets.includes(widget)) {
@@ -317,6 +397,14 @@ const MainPage = () => {
 
             setLayout(updatedLayout);
             setOpenedCardMenu(null);
+
+            if (widget === 'TASK_ACTIVITY') {
+                setTaskActivity([]);
+            }
+
+            if (widget === 'RECENT_ACTIVITY') {
+                setRecentActivity([]);
+            }
         } catch {
             setDashboardError('Не удалось удалить виджет');
         }
@@ -459,7 +547,7 @@ const MainPage = () => {
                     </div>
 
                     <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={layout?.widgets ?? []} strategy={rectSortingStrategy}>
+                        <SortableContext items={dashboardCards.map((card) => card.id)} strategy={rectSortingStrategy}>
                             <section className={styles.dashboardGrid}>
                             {dashboardCards.map((card) => (
                                 <SortableDashboardCard
@@ -557,49 +645,43 @@ const MainPage = () => {
                                 return (
                                 <article key={widget} className={styles.activityWidget}>
                                     <div className={styles.widgetHeader}>
-                                    <div>
-                                        <h2>Последняя активность</h2>
-                                        <p>Действия пользователей</p>
-                                    </div>
+                                        <div>
+                                            <h2>Последняя активность</h2>
+                                            <p>Действия пользователей</p>
+                                        </div>
 
-                                    <button type="button" onClick={() => handleRemoveWidget(widget)}>
-                                        •••
-                                    </button>
+                                        <button
+                                            type="button"
+                                            aria-label="Удалить виджет последней активности"
+                                            onClick={() => handleRemoveWidget(widget)}
+                                        >
+                                            •••
+                                        </button>
                                     </div>
 
                                     <div className={styles.activityList}>
-                                    <div className={styles.activityItem}>
-                                        <div className={styles.activityAvatar}>AK</div>
+                                        {recentActivity.length > 0 ? (
+                                            recentActivity.map((activity) => (
+                                                <div key={activity.id} className={styles.activityItem}>
+                                                    <div className={styles.activityAvatar}>
+                                                        {getUserInitials(activity.user.name, activity.user.email)}
+                                                    </div>
 
-                                        <div>
-                                        <strong>Александр</strong>
-                                        <p>Закрыл задачу #128</p>
-                                        </div>
+                                                    <div>
+                                                        <strong>{activity.user.name || activity.user.email}</strong>
+                                                        <p>{activity.message}</p>
+                                                    </div>
 
-                                        <time>5 мин</time>
-                                    </div>
-
-                                    <div className={styles.activityItem}>
-                                        <div className={styles.activityAvatar}>MS</div>
-
-                                        <div>
-                                        <strong>Мария</strong>
-                                        <p>Создала новую задачу</p>
-                                        </div>
-
-                                        <time>18 мин</time>
-                                    </div>
-
-                                    <div className={styles.activityItem}>
-                                        <div className={styles.activityAvatar}>IV</div>
-
-                                        <div>
-                                        <strong>Иван</strong>
-                                        <p>Изменил статус проекта</p>
-                                        </div>
-
-                                        <time>42 мин</time>
-                                    </div>
+                                                    <time dateTime={activity.createdAt}>
+                                                        {formatRelativeTime(activity.createdAt)}
+                                                    </time>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className={styles.activityEmpty}>
+                                                Действий пока нет
+                                            </p>
+                                        )}
                                     </div>
                                 </article>
                                 );

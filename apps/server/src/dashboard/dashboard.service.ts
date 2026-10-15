@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { TaskStatus } from "@prisma/client";
-import { DEFAULT_DASHBOARD_WIDGETS, type DashboardActivityPeriod, type DashboardWidgetType, type IDashboardLayout, type IDashboardSummary, type IDashboardTaskActivityPoint } from '@cryptoleap_crm/shared';
+import { TaskStatus, ActivityType } from "@prisma/client";
+import { DEFAULT_DASHBOARD_WIDGETS, type DashboardActivityPeriod, type DashboardActivityType, type DashboardWidgetType, type IDashboardLayout, type IDashboardRecentActivityItem, type IDashboardSummary, type IDashboardTaskActivityPoint } from '@cryptoleap_crm/shared';
 import { PrismaService } from "src/prisma/prisma.service";
 import { PresenceService } from "src/presence/presence.service";
 
@@ -179,5 +179,101 @@ export class DashboardService {
         const day = String(date.getDate()).padStart(2, '0');
 
         return `${year}-${month}-${day}`;
+    }
+
+    private getActivityMessage(type: ActivityType, taskTitle: string | null, metadata: unknown): string {
+        const title = taskTitle ? `«${taskTitle}»` : 'задача';
+
+        if (type === ActivityType.TASK_CREATED) {
+            return `Создана задача ${title}`;
+        }
+
+        if (type === ActivityType.TASK_UPDATED) {
+            return `Обновлена задача ${title}`;
+        }
+
+        if (type === ActivityType.TASK_ASSIGNEE_CHANGED) {
+            return `Изменён исполнитель задачи ${title}`;
+        }
+
+        if (type === ActivityType.TASK_STATUS_CHANGED) {
+            const fromStatus = this.getMetadataString(metadata, 'fromStatus');
+            const toStatus = this.getMetadataString(metadata, 'toStatus');
+
+            if (fromStatus && toStatus) {
+                return `Статус задачи ${title}: ${this.getTaskStatusLabel(fromStatus)} → ${this.getTaskStatusLabel(toStatus)}`;
+            }
+
+            return `Изменён статус задачи ${title}`;
+        }
+
+        return `Обновлена задача ${title}`;
+    }
+
+    private getMetadataString(metadata: unknown, key: string): string | null {
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+            return null;
+        }
+
+        const value = (metadata as Record<string, unknown>)[key];
+
+        return typeof value === 'string' ? value : null;
+    }
+
+    private getTaskStatusLabel(status: string): string {
+        if (status === TaskStatus.TODO) {
+            return 'К выполнению';
+        }
+
+        if (status === TaskStatus.IN_PROGRESS) {
+            return 'В работе';
+        }
+
+        if (status === TaskStatus.DONE) {
+            return 'Завершена';
+        }
+
+        if (status === TaskStatus.CANCELED) {
+            return 'Отменена';
+        }
+
+        return status;
+    }
+
+    async getRecentActivity(limit: number): Promise<IDashboardRecentActivityItem[]> {
+        const activities = await this.prisma.activityLog.findMany({
+            take: limit,
+            orderBy: {
+                createdAt: 'desc',
+            },
+            select: {
+                id: true,
+                type: true,
+                metadata: true,
+                createdAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+                task: {
+                    select: {
+                        id: true,
+                        title: true,
+                    },
+                },
+            },
+        });
+
+        return activities.map((activity) => ({
+            id: activity.id,
+            type: activity.type as DashboardActivityType,
+            message: this.getActivityMessage(activity.type, activity.task?.title ?? null, activity.metadata),
+            createdAt: activity.createdAt.toISOString(),
+            user: activity.user,
+            task: activity.task,
+        }));
     }
 }

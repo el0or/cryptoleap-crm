@@ -1,4 +1,4 @@
-import type { DashboardActivityPeriod, DashboardWidgetType, IDashboardLayout, IDashboardSummary, IDashboardTaskActivityPoint } from '@cryptoleap_crm/shared';
+import type { DashboardActivityPeriod, DashboardWidgetType, IDashboardLayout, IDashboardRecentActivityItem, IDashboardSummary, IDashboardTaskActivityPoint } from '@cryptoleap_crm/shared';
 import { apiFetch } from "./http";
 
 export const getDashboardSummaryRequest = () => {
@@ -19,3 +19,7 @@ export const updateDashboardLayoutRequest = (widgets: DashboardWidgetType[]) => 
 export const getDashboardTaskActivityRequest = (days: DashboardActivityPeriod) => {
     return apiFetch<IDashboardTaskActivityPoint[]>(`/dashboard/task-activity?days=${days}`);
 };
+
+export const getDashboardRecentActivityRequest = (limit: 8) => {
+    return apiFetch<IDashboardRecentActivityItem[]>(`/dashboard/recent-activity?limit=${limit}`);
+}
