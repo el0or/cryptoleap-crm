@@ -7,9 +7,10 @@ import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { PresenceModule } from './presence/presence.module';
 import { TasksModule } from './tasks/tasks.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [ ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, PresenceModule, TasksModule, DashboardModule ],
+  imports: [ ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, PresenceModule, TasksModule, DashboardModule, UsersModule ],
   controllers: [AppController],
   providers: [AppService],
 })

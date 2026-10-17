@@ -1,0 +1,550 @@
+.tasksPage {
+    --color-bg: #f4f6fa;
+    --color-surface: #ffffff;
+    --color-surface-soft: #f8f9fc;
+    --color-text: #202330;
+    --color-muted: #777d8d;
+    --color-subtle: #a2a7b3;
+    --color-border: #e5e8ef;
+    --color-primary: #526dff;
+    --color-primary-dark: #3d57e8;
+    --color-danger: #bd4047;
+
+    --space-xs: clamp(0.35rem, 0.4vw, 0.5rem);
+    --space-sm: clamp(0.55rem, 0.65vw, 0.8rem);
+    --space-md: clamp(0.8rem, 0.95vw, 1.15rem);
+    --space-lg: clamp(1rem, 1.35vw, 1.65rem);
+    --space-xl: clamp(1.3rem, 1.85vw, 2.25rem);
+    --space-2xl: clamp(1.65rem, 2.4vw, 3rem);
+
+    --radius-sm: clamp(0.5rem, 0.55vw, 0.7rem);
+    --radius-md: clamp(0.75rem, 0.8vw, 1rem);
+    --radius-lg: clamp(1rem, 1.15vw, 1.4rem);
+
+    --shadow-card:
+        0 clamp(0.5rem, 0.8vw, 0.9rem)
+        clamp(1.4rem, 2.4vw, 2.8rem)
+        rgba(29, 37, 64, 0.07);
+
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: clamp(1rem, 2.2vw, 2.75rem);
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+.mainSection {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tasksPage,
+.tasksPage * {
+    box-sizing: border-box;
+}
+
+.header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.header h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 2.35vw, 2.75rem);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    line-height: 1.05;
+}
+
+.header p {
+    margin: var(--space-xs) 0 0;
+    color: var(--color-muted);
+    font-size: clamp(0.78rem, 0.78vw, 0.95rem);
+}
+
+.header > button {
+    display: inline-flex;
+    min-height: clamp(2.7rem, 3.1vw, 3.2rem);
+    align-items: center;
+    justify-content: center;
+    padding: 0 clamp(1rem, 1.3vw, 1.45rem);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--color-primary), #6f61eb);
+    box-shadow:
+        0 clamp(0.35rem, 0.5vw, 0.6rem)
+        clamp(0.9rem, 1.25vw, 1.5rem)
+        rgba(82, 109, 255, 0.22);
+    color: #ffffff;
+    cursor: pointer;
+    font-size: clamp(0.78rem, 0.76vw, 0.9rem);
+    font-weight: 650;
+    white-space: nowrap;
+    transition:
+        box-shadow 160ms ease,
+        transform 160ms ease,
+        filter 160ms ease;
+}
+
+.error {
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border: 0.0625rem solid rgba(219, 72, 72, 0.18);
+    border-radius: var(--radius-sm);
+    background: #fff1f1;
+    color: #b53333;
+    font-size: clamp(0.75rem, 0.72vw, 0.88rem);
+}
+
+.state {
+    display: grid;
+    min-height: clamp(12rem, 21vw, 18rem);
+    place-items: center;
+    padding: var(--space-2xl);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+    color: var(--color-muted);
+    font-size: clamp(0.78rem, 0.78vw, 0.95rem);
+    text-align: center;
+}
+
+.tasksTable {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border: 0.0625rem solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+}
+
+.tableHeader,
+.taskRow {
+    display: grid;
+    grid-template-columns:
+        minmax(clamp(14rem, 24vw, 22rem), 2fr)
+        minmax(clamp(8rem, 10vw, 10rem), 0.8fr)
+        minmax(clamp(7rem, 9vw, 9rem), 0.7fr)
+        minmax(clamp(9rem, 14vw, 14rem), 1fr)
+        minmax(clamp(7rem, 9vw, 9rem), 0.7fr);
+    gap: var(--space-md);
+    align-items: center;
+    padding: clamp(0.8rem, 1vw, 1.15rem) clamp(1rem, 1.35vw, 1.55rem);
+}
+
+.tableHeader {
+    background: var(--color-surface-soft);
+    color: var(--color-muted);
+    font-size: clamp(0.68rem, 0.66vw, 0.8rem);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+}
+
+.taskRow {
+    min-height: clamp(4.7rem, 6vw, 6.2rem);
+    border-top: 0.0625rem solid var(--color-border);
+    transition:
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.taskInfo {
+    min-width: 0;
+}
+
+.taskInfo strong {
+    display: block;
+    overflow: hidden;
+    font-size: clamp(0.8rem, 0.82vw, 0.96rem);
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.taskInfo p {
+    display: -webkit-box;
+    margin: clamp(0.18rem, 0.22vw, 0.25rem) 0 0;
+    overflow: hidden;
+    color: var(--color-subtle);
+    font-size: clamp(0.66rem, 0.63vw, 0.76rem);
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.taskRow > span {
+    min-width: 0;
+    overflow: hidden;
+    color: #626979;
+    font-size: clamp(0.72rem, 0.7vw, 0.84rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.taskRow select {
+    width: 100%;
+    min-height: clamp(2.15rem, 2.4vw, 2.55rem);
+    padding: 0 clamp(0.55rem, 0.7vw, 0.8rem);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background: var(--color-surface-soft);
+    color: #626979;
+    cursor: pointer;
+    font-size: clamp(0.7rem, 0.68vw, 0.82rem);
+}
+
+.taskRow select:focus-visible {
+    border-color: rgba(82, 109, 255, 0.55);
+    box-shadow:
+        0 0 0
+        clamp(0.12rem, 0.18vw, 0.2rem)
+        rgba(82, 109, 255, 0.1);
+}
+
+.priority {
+    width: fit-content;
+    max-width: 100%;
+    padding:
+        clamp(0.3rem, 0.35vw, 0.4rem)
+        clamp(0.55rem, 0.7vw, 0.8rem);
+    overflow: hidden;
+    border-radius: 999rem;
+    font-size: clamp(0.62rem, 0.6vw, 0.72rem);
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.low {
+    background: #eef1f5;
+    color: #697080;
+}
+
+.medium {
+    background: #edf0ff;
+    color: #5269dc;
+}
+
+.high {
+    background: #fff1db;
+    color: #ad6a0e;
+}
+
+.urgent {
+    background: #ffe8ea;
+    color: #bd4047;
+}
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    padding:
+        max(clamp(0.85rem, 2vw, 2rem), env(safe-area-inset-top))
+        max(clamp(0.85rem, 2vw, 2rem), env(safe-area-inset-right))
+        max(clamp(0.85rem, 2vw, 2rem), env(safe-area-inset-bottom))
+        max(clamp(0.85rem, 2vw, 2rem), env(safe-area-inset-left));
+    place-items: center;
+    overflow-y: auto;
+    background: rgba(14, 18, 29, 0.62);
+    backdrop-filter: blur(clamp(0.35rem, 0.55vw, 0.7rem));
+    -webkit-backdrop-filter: blur(clamp(0.35rem, 0.55vw, 0.7rem));
+}
+
+.modal {
+    display: flex;
+    width: min(100%, clamp(26rem, 42vw, 36rem));
+    max-height: min(88vh, 48rem);
+    max-height: min(88dvh, 48rem);
+    padding: clamp(1rem, 1.65vw, 1.8rem);
+    overflow-y: auto;
+    flex-direction: column;
+    gap: var(--space-md);
+    border: 0.0625rem solid rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.99);
+    box-shadow:
+        0 clamp(1.25rem, 2vw, 2.5rem)
+        clamp(3rem, 6vw, 7rem)
+        rgba(8, 12, 25, 0.3);
+}
+
+.modalHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xs);
+}
+
+.modalHeader h2 {
+    margin: 0;
+    font-size: clamp(1.15rem, 1.4vw, 1.55rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.modalHeader p {
+    margin: var(--space-xs) 0 0;
+    color: var(--color-muted);
+    font-size: clamp(0.72rem, 0.7vw, 0.84rem);
+}
+
+.modalHeader button {
+    display: grid;
+    width: clamp(2.2rem, 2.6vw, 2.7rem);
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-surface-soft);
+    color: #6e7482;
+    cursor: pointer;
+    font-size: clamp(1.35rem, 1.6vw, 1.75rem);
+    line-height: 1;
+}
+
+.modal label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    color: #4d5260;
+    font-size: clamp(0.7rem, 0.68vw, 0.82rem);
+    font-weight: 650;
+}
+
+.modal input,
+.modal textarea,
+.modal select {
+    width: 100%;
+    min-height: clamp(2.55rem, 3vw, 3rem);
+    padding:
+        clamp(0.65rem, 0.75vw, 0.85rem)
+        clamp(0.75rem, 0.9vw, 1rem);
+    border: 0.0625rem solid var(--color-border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: clamp(0.76rem, 0.74vw, 0.88rem);
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        background-color 160ms ease;
+}
+
+.modal textarea {
+    min-height: clamp(7rem, 11vw, 10rem);
+    resize: vertical;
+}
+
+.modal input:focus,
+.modal textarea:focus,
+.modal select:focus {
+    border-color: rgba(82, 109, 255, 0.55);
+    box-shadow:
+        0 0 0
+        clamp(0.12rem, 0.18vw, 0.2rem)
+        rgba(82, 109, 255, 0.1);
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    margin-top: var(--space-xs);
+}
+
+.modalActions button {
+    min-height: clamp(2.55rem, 3vw, 3rem);
+    padding: 0 clamp(0.9rem, 1.2vw, 1.35rem);
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: clamp(0.74rem, 0.72vw, 0.86rem);
+    font-weight: 650;
+}
+
+.modalActions button[type='button'] {
+    background: #eef0f4;
+    color: #5f6573;
+}
+
+.modalActions button[type='submit'] {
+    background: linear-gradient(135deg, var(--color-primary), #6f61eb);
+    color: #ffffff;
+}
+
+.modalActions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.tasksPage button:focus-visible {
+    outline:
+        clamp(0.12rem, 0.15vw, 0.18rem)
+        solid rgba(82, 109, 255, 0.72);
+    outline-offset: clamp(0.12rem, 0.15vw, 0.18rem);
+}
+
+@media (hover: hover) {
+    .header > button:hover {
+        box-shadow:
+            0 clamp(0.5rem, 0.65vw, 0.75rem)
+            clamp(1.2rem, 1.7vw, 2rem)
+            rgba(82, 109, 255, 0.3);
+        filter: saturate(1.08);
+        transform: translateY(clamp(-0.12rem, -0.1vw, -0.08rem));
+    }
+
+    .taskRow:hover {
+        background: #fafbfe;
+    }
+
+    .modalHeader button:hover {
+        background: #eceff5;
+        color: var(--color-text);
+    }
+}
+
+@media (max-width: 75em) {
+    .tableHeader,
+    .taskRow {
+        grid-template-columns:
+            minmax(clamp(13rem, 26vw, 19rem), 1.8fr)
+            minmax(8rem, 0.8fr)
+            minmax(7rem, 0.7fr)
+            minmax(9rem, 1fr)
+            minmax(7rem, 0.7fr);
+    }
+
+    .tasksTable {
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .tableHeader,
+    .taskRow {
+        min-width: 58rem;
+    }
+}
+
+@media (max-width: 48em) {
+    .tasksPage {
+        padding:
+            var(--space-lg)
+            max(var(--space-md), env(safe-area-inset-right))
+            max(var(--space-xl), env(safe-area-inset-bottom))
+            max(var(--space-md), env(safe-area-inset-left));
+    }
+
+    .header {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+    }
+
+    .header > button {
+        width: 100%;
+    }
+
+    .tasksTable {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .tableHeader {
+        display: none;
+    }
+
+    .taskRow {
+        display: grid;
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-md);
+        margin-bottom: var(--space-sm);
+        padding: var(--space-md);
+        border: 0.0625rem solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+    }
+
+    .taskInfo {
+        grid-column: 1 / -1;
+    }
+
+    .taskRow select {
+        grid-column: 1;
+    }
+
+    .priority {
+        grid-column: 2;
+        align-self: center;
+        justify-self: end;
+    }
+
+    .taskRow > span:nth-of-type(2) {
+        grid-column: 1;
+    }
+
+    .taskRow > span:last-child {
+        grid-column: 2;
+        justify-self: end;
+    }
+}
+
+@media (max-width: 36em) {
+    .modal {
+        width: 100%;
+        max-height: 92vh;
+        max-height: 92dvh;
+    }
+
+    .modalActions {
+        flex-direction: column-reverse;
+    }
+
+    .modalActions button {
+        width: 100%;
+    }
+
+    .taskRow {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .taskRow select,
+    .priority,
+    .taskRow > span:nth-of-type(2),
+    .taskRow > span:last-child {
+        grid-column: 1;
+        justify-self: stretch;
+    }
+
+    .priority {
+        width: fit-content;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tasksPage *,
+    .tasksPage *::before,
+    .tasksPage *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -91,3 +91,55 @@ export interface IDashboardRecentActivityItem {
         title: string;
     } | null;
 }
+
+export const TASK_STATUSES = {
+    TODO: 'TODO',
+    IN_PROGRESS: 'IN_PROGRESS',
+    DONE: 'DONE',
+    CANCELED: 'CANCELED',
+} as const;
+
+export type TaskStatus = typeof TASK_STATUSES[keyof typeof TASK_STATUSES];
+
+export const TASK_PRIORITIES = {
+    LOW: 'LOW',
+    MEDIUM: 'MEDIUM',
+    HIGH: 'HIGH',
+    URGENT: 'URGENT',
+} as const;
+
+export type TaskPriority = typeof TASK_PRIORITIES[keyof typeof TASK_PRIORITIES];
+
+export interface ITaskUser {
+    id: string;
+    email: string;
+    name: string | null;
+}
+
+export interface ITask {
+    id: string;
+    title: string;
+    description: string | null;
+    status: TaskStatus;
+    priority: TaskPriority;
+    createdById: string;
+    assigneeId: string | null;
+    dueAt: string | null;
+    completedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    createdBy: ITaskUser;
+    assignee: ITaskUser | null;
+}
+
+export interface ICreateTaskRequest {
+    title: string;
+    description?: string;
+    priority?: TaskPriority;
+    assigneeId?: string;
+    dueAt?: string;
+}
+
+export interface IUpdateTaskStatusRequest {
+    status: TaskStatus;
+}
