@@ -9,24 +9,28 @@
 }
 
 .mainContent {
+    height: 100%;
     min-width: 0;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
 }
 
 @media (max-width: 62em) {
-    .appLayout {
+    .mainSection {
         grid-template-columns: clamp(10.5rem, 19vw, 12.5rem) minmax(0, 1fr);
     }
 }
 
 @media (max-width: 48em) {
-    .appLayout {
+    .mainSection {
         display: flex;
         flex-direction: column;
     }
 
-    .content {
+    .mainContent {
         flex: 1;
+        height: auto;
     }
 }
